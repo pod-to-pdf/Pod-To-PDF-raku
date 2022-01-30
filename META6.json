@@ -6,7 +6,9 @@
   "build-depends": [
   ],
   "depends": [
-      "Cairo:ver<0.2.8+>", "File::Temp"
+      "Cairo:ver<0.2.8+>",
+      "File::Temp",
+      "FontConfig"
   ],
   "description": "Pod rendering to PDF, PNG, and SVG",
   "license": "Artistic-2.0",
@@ -14,6 +16,7 @@
   "perl": "6.d",
   "provides": {
     "Pod::To::Cairo": "lib/Pod/To/Cairo.rakumod",
+    "Pod::To::Cairo::Text": "lib/Pod/To/Cairo/Text.rakumod",
     "Pod::To::Cairo::Style": "lib/Pod/To/Cairo/Style.rakumod",
     "Pod::To::PDF": "lib/Pod/To/PDF.rakumod",
     "Pod::To::PNG": "lib/Pod/To/PNG.rakumod",

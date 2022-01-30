@@ -2,6 +2,7 @@
 unit class Pod::To::Cairo::Style is rw;
 
 use Cairo;
+use FontConfig;
 
 has Bool $.bold;
 has Bool $.italic;
@@ -11,6 +12,7 @@ has UInt $.lines-before = 1;
 has $.font-size is built;
 has $.link;
 has Cairo::Context $.ctx is required;
+has FontConfig $!pattern;
 
 submethod TWEAK(:$font-size = 10) {
     self.font-size = $font-size;
@@ -30,9 +32,14 @@ method line-height {
     $.leading * $!font-size;
 }
 
-method font {
-    my $family = $!mono ?? 'monospace' !! 'serif';
-    my $slant  = $!italic ?? Cairo::FONT_SLANT_ITALIC !! Cairo::FONT_SLANT_NORMAL;
-    my $weight = $!bold   ?? Cairo::FONT_WEIGHT_BOLD  !! Cairo::FONT_WEIGHT_NORMAL;
-    $!ctx.select_font_face($family, $slant, $weight);
+method pattern {
+
+    $!pattern //= do {
+        my $family = $!mono ?? 'monospace' !! 'serif';
+        my %patt = :$family;
+        %patt<slant> = 'italic' if $!italic;
+        %patt<bold>  = 'bold' if $!bold;
+        FontConfig.new: |%patt;
+    }
 }
+

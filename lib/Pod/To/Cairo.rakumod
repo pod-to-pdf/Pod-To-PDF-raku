@@ -14,6 +14,8 @@ has $!ty = 0; # text-flow y
 has $.margin = 20;
 has UInt $!pad = 0;
 has UInt $!page-num = 0;
+has Cairo::Font %!fonts;
+has Str $!cur-font = '';
 
 has Cairo::Surface:D $.surface is required;
 has Cairo::Context $.ctx .= new: $!surface;
@@ -31,6 +33,16 @@ method !pad-here {
     $!pad = 0;
 }
 
+method !set-font {
+    given $!style.pattern {
+        unless .Str eq $!cur-font {
+            my Cairo::Font $font = %!fonts{.Str} //= Cairo::Font.create(.pattern, :fontconfig);
+            $!ctx.set_font_face: $font;
+            $!cur-font = .Str;
+        }
+    }
+}
+
 method !style(&codez, Bool :$indent, Bool :$pad, |c) {
     temp $!style .= clone: |c;
     temp $!indent;
@@ -44,6 +56,7 @@ multi method say {
 }
 multi method say($wot) {
     warn "STUB!";
+    self!set-font();
     for $wot.lines {
         $!ctx.move_to($!tx, $!ty);
         $!ctx.show_text($_);
@@ -87,6 +100,10 @@ multi method pod2pdf(Pod::Heading $pod) {
     }
 }
 
+multi method pod2pdf(List:D $_) {
+    $.pod2pdf($_) for .List;
+}
+
 multi method pod2pdf($pod) {
     warn "fallback render of {$pod.WHAT.raku}";
     $.say: pod2text($pod);
@@ -95,4 +112,8 @@ multi method pod2pdf($pod) {
 sub node2text($pod) {
     warn "stub";
     pod2text($pod);
+}
+
+submethod DESTROY {
+    .destroy for %!fonts.values;
 }

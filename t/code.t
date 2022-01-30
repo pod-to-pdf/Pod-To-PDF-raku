@@ -6,8 +6,10 @@ use Cairo;
 
 plan 1;
 
-my Cairo::Surface $pdf = pod2pdf($=pod);
+my $file = "t/code.pdf";
+my Cairo::Surface $pdf = pod2pdf($=pod, :$file);
 lives-ok {$pdf.finish}
+
 
 =begin pod
 asdf

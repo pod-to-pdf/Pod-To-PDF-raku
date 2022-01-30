@@ -9,17 +9,19 @@ submethod TWEAK(Str :$title, Str :$lang = 'en', :$pod) {
     self.read($_) with $pod;
 }
 
-method render($class: $pod, |c) {
-    my ($file-name, ) = tempfile("POD6-****.pdf", :!unlink);
-    my Cairo::Surface::PDF $surface .= create($file-name, 512, 720);
-    my $renderer = $class.new(|c, :$pod, :$surface);
+method render($class: $pod, :$file = tempfile("POD6-****.pdf", :!unlink)[0], |c) {
+    my Cairo::Surface::PDF $surface .= create($file, 512, 720);
+    $class.new(|c, :$pod, :$surface);
     $surface.finish;
-    $file-name;
+    $file;
 }
 
-our sub pod2pdf($pod, :$class = $?CLASS, |c) is export {
-    my ($file-name, ) = tempfile("POD6-****.pdf", :!unlink);
-    my Cairo::Surface::PDF $surface .= create($file-name, 512, 720);
+our sub pod2pdf(
+    $pod,
+    :$class = $?CLASS,
+    Str :$file = tempfile("POD6-****.pdf", :!unlink)[0],
+    Cairo::Surface::PDF :$surface = Cairo::Surface::PDF.create($file, 512, 720),
+    |c) is export {
     $class.new(|c, :$pod, :$surface);
     $surface;
 }
