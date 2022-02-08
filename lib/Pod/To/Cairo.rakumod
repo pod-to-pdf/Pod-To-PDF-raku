@@ -1,7 +1,10 @@
 unit class Pod::To::Cairo;
 
 use Pod::To::Cairo::Style;
+use Pod::To::Cairo::TextBlock;
+use HarfBuzz::Font::Cairo;
 use Cairo;
+use FontConfig;
 use Pod::To::Text;
 
 subset Level of Int:D where 1..6;
@@ -14,8 +17,9 @@ has $!ty = 0; # text-flow y
 has $.margin = 20;
 has UInt $!pad = 0;
 has UInt $!page-num = 0;
-has Cairo::Font %!fonts;
-has Str $!cur-font = '';
+has HarfBuzz::Font::Cairo %!fonts;
+has HarfBuzz::Font::Cairo $!cur-font;
+has Str $!cur-font-patt = '';
 
 has Cairo::Surface:D $.surface is required;
 has Cairo::Context $.ctx .= new: $!surface;
@@ -33,13 +37,18 @@ method !pad-here {
     $!pad = 0;
 }
 
-method !set-font {
-    given $!style.pattern {
-        unless .Str eq $!cur-font {
-            my Cairo::Font $font = %!fonts{.Str} //= Cairo::Font.create(.pattern, :fontconfig);
-            $!ctx.set_font_face: $font;
-            $!cur-font = .Str;
+method !curr-font {
+    given $!style.pattern -> FontConfig $patt {
+        my $key := $patt.Str;
+        unless $key eq $!cur-font-patt {
+            $!cur-font = %!fonts{$key} //= do {
+                my Str:D $file = $patt.match.file;
+                HarfBuzz::Font::Cairo.new: :$file;
+            }
+            $!cur-font-patt = $key;
+            $!ctx.set_font_face: $!cur-font.cairo-font;
         }
+        $!cur-font;
     }
 }
 
@@ -50,20 +59,31 @@ method !style(&codez, Bool :$indent, Bool :$pad, |c) {
     $pad ?? $.pad(&codez) !! &codez();
 }
 
+method !text-block(
+        Str $text,
+        :$width = $!surface.width - self!indent - 2*$!margin,
+        :$height = $!surface.height - $!ty - $!margin,
+        |c) {
+    my $font := self!curr-font();
+    ::('Pod::To::Cairo::TextBlock').new: :$text, :indent($!tx), :$font, :$!style :$width, :$height, |c;
+}
+
 multi method say {
     $!tx = 0;
-    $!ty -= $.line-height;
+    $!ty += $.line-height;
 }
-multi method say($wot) {
+multi method say($text) {
+    self.print($text, :nl);
+}
+method print($text, Bool :$nl) {
     warn "STUB!";
-    self!set-font();
-    for $wot.lines {
+    self!text-block($text); # not used yet
+    for $text.lines {
         $!ctx.move_to($!tx, $!ty);
         $!ctx.show_text($_);
         $!ty += $.line-height;
     }
 }
-
 method !new-page {
     $!page-num++;
     $!ctx.show_page unless $!page-num == 1;
@@ -108,6 +128,8 @@ multi method pod2pdf($pod) {
     warn "fallback render of {$pod.WHAT.raku}";
     $.say: pod2text($pod);
 }
+
+method !indent { 10 * $!indent; }
 
 sub node2text($pod) {
     warn "stub";

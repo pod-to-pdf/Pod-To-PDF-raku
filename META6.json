@@ -8,19 +8,21 @@
   "depends": [
       "Cairo:ver<0.2.8+>",
       "File::Temp",
-      "FontConfig"
+      "FontConfig",
+      "HarfBuzz",
+      "HarfBuzz::Shaper::Cairo:ver<0.0.3+>"
   ],
-  "description": "Pod rendering to PDF, PNG, and SVG",
+  "description": "Pod rendering via Cairo to PDF, PNG, and SVG",
   "license": "Artistic-2.0",
   "name": "Pod::To::Cairo",
   "perl": "6.d",
   "provides": {
     "Pod::To::Cairo": "lib/Pod/To/Cairo.rakumod",
-    "Pod::To::Cairo::Text": "lib/Pod/To/Cairo/Text.rakumod",
+    "Pod::To::Cairo::TextBlock": "lib/Pod/To/Cairo/TextBlock.rakumod",
     "Pod::To::Cairo::Style": "lib/Pod/To/Cairo/Style.rakumod",
-    "Pod::To::PDF": "lib/Pod/To/PDF.rakumod",
-    "Pod::To::PNG": "lib/Pod/To/PNG.rakumod",
-    "Pod::To::SVG": "lib/Pod/To/SVG.rakumod"
+    "Pod::To::Cairo::PDF": "lib/Pod/To/Cairo/PDF.rakumod",
+    "Pod::To::Cairo::PNG": "lib/Pod/To/Cairo/PNG.rakumod",
+    "Pod::To::Cairo::SVG": "lib/Pod/To/Cairo/SVG.rakumod"
   },
   "raku": "6.*",
   "resources": [
