@@ -42,11 +42,11 @@ jobs:
           brew install fribidi
       - name: Install Dependencies
         run: |
-          export LD_LIBRARY_PATH=harfbuzz-3.3.1/src/.libs
+          export LD_LIBRARY_PATH=`pwd`/harfbuzz-3.3.1/src/.libs
           zef install --/test App::Prove6
           zef --deps-only install .
       - name: Run Tests
         run: |
-          export LD_LIBRARY_PATH=harfbuzz-3.3.1/src/.libs
+          export LD_LIBRARY_PATH=`pwd`/harfbuzz-3.3.1/src/.libs
           prove6 -I. t
           zef install .
