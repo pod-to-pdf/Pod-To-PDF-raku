@@ -10,7 +10,8 @@
       "File::Temp",
       "FontConfig",
       "HarfBuzz:ver<0.0.11+>",
-      "HarfBuzz::Font::Cairo"
+      "HarfBuzz::Font::Cairo",
+      "Text::FriBidi"
   ],
   "description": "Pod rendering via Cairo to PDF, PNG, and SVG",
   "license": "Artistic-2.0",
