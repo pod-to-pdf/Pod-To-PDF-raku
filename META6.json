@@ -6,11 +6,11 @@
   "build-depends": [
   ],
   "depends": [
-      "Cairo:ver<0.2.8+>",
+      "Cairo:ver<0.2.7+>",
       "File::Temp",
       "FontConfig",
-      "HarfBuzz",
-      "HarfBuzz::Shaper::Cairo:ver<0.0.3+>"
+      "HarfBuzz:ver<0.0.11+>",
+      "HarfBuzz::Font::Cairo"
   ],
   "description": "Pod rendering via Cairo to PDF, PNG, and SVG",
   "license": "Artistic-2.0",
