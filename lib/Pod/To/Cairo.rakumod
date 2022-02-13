@@ -1,7 +1,7 @@
 unit class Pod::To::Cairo;
 
 use Pod::To::Cairo::Style;
-use Pod::To::Cairo::TextBlock;
+use Pod::To::Cairo::TextChunk;
 use HarfBuzz::Font::Cairo;
 use Cairo;
 use FontConfig;
@@ -59,30 +59,27 @@ method !style(&codez, Bool :$indent, Bool :$pad, |c) {
     $pad ?? $.pad(&codez) !! &codez();
 }
 
-method !text-block(
+method !text-chunk(
         Str $text,
         :$width = $!surface.width - self!indent - 2*$!margin,
         :$height = $!surface.height - $!ty - $!margin,
         |c) {
     my $font := self!curr-font();
-    ::('Pod::To::Cairo::TextBlock').new: :$text, :indent($!tx), :$font, :$!style :$width, :$height, |c;
+    ::('Pod::To::Cairo::TextChunk').new: :$text, :indent($!tx), :$font, :$!style :$width, :$height, |c;
 }
 
 multi method say {
     $!tx = 0;
     $!ty += $.line-height;
 }
+
 multi method say($text) {
     self.print($text, :nl);
 }
 method print($text, Bool :$nl) {
     warn "STUB!";
-    self!text-block($text); # not used yet
-    for $text.lines {
-        $!ctx.move_to($!tx, $!ty);
-        $!ctx.show_text($_);
-        $!ty += $.line-height;
-    }
+    my $chunk = self!text-chunk($text); # not used yet
+    $chunk.print(:$!ctx, :$!tx, :$!ty, :$nl);
 }
 method !new-page {
     $!page-num++;

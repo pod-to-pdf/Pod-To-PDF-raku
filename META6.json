@@ -18,7 +18,7 @@
   "perl": "6.d",
   "provides": {
     "Pod::To::Cairo": "lib/Pod/To/Cairo.rakumod",
-    "Pod::To::Cairo::TextBlock": "lib/Pod/To/Cairo/TextBlock.rakumod",
+    "Pod::To::Cairo::TextChunk": "lib/Pod/To/Cairo/TextChunk.rakumod",
     "Pod::To::Cairo::Style": "lib/Pod/To/Cairo/Style.rakumod",
     "Pod::To::Cairo::PDF": "lib/Pod/To/Cairo/PDF.rakumod",
     "Pod::To::Cairo::PNG": "lib/Pod/To/Cairo/PNG.rakumod",
