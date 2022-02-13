@@ -28,9 +28,10 @@ jobs:
       - name: Linux specific setup
         if: contains(matrix.os, 'ubuntu')
         run: |
-          ## Requires Debian 11+
+          sudo apt-get install -y libfribidi-dev
           wget https://github.com/harfbuzz/harfbuzz/archive/3.3.1.tar.gz
           (tar xzf 3.3.1.tar.gz && cd harfbuzz-3.3.1 && ./autogen.sh && make)
+          ## Requires future Debian; v12+?
           ##sudo apt-get install -y libharfbuzz-dev
       - name: macOS specific setup
         if: contains(matrix.os, 'macOS')
@@ -38,6 +39,7 @@ jobs:
           brew update
           ## brew install autoconf automake libtool
           brew install harfbuzz
+          brew install fribidi
       - name: Install Dependencies
         run: |
           zef install --/test App::Prove6
