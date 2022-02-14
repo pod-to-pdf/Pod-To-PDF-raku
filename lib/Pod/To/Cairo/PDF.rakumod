@@ -1,12 +1,13 @@
 use Pod::To::Cairo;
-unit class Pod::To::Cairo::PDF
+unit class Pod::To::Cairo::PDF:ver<0.0.1>
     is Pod::To::Cairo;
 
 use Cairo;
 use File::Temp;
 
-submethod TWEAK(Str :$title, Str :$lang = 'en', :$pod) {
-    self.read($_) with $pod;
+submethod TWEAK(Str :$title, Str :$lang = 'en') {
+    self.surface.set_metadata(CAIRO_PDF_METADATA_TITLE, $_) with $title;
+    self.surface.set_metadata(CAIRO_PDF_METADATA_CREATOR, "Raku {self.^name} v{self.^ver}");
 }
 
 method render($class: $pod, :$file = tempfile("POD6-****.pdf", :!unlink)[0], |c) {

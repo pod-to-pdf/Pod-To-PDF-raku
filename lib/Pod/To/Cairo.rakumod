@@ -12,9 +12,9 @@ subset Level of Int:D where 1..6;
 has $.width = 512;
 has $.height = 720;
 has UInt $!indent = 0;
-has $!tx = 0; # text-flow x
-has $!ty = 0; # text-flow y
 has $.margin = 20;
+has $!tx = 0; # text-flow x
+has $!ty = $!margin; # text-flow y
 has UInt $!pad = 0;
 has UInt $!page-num = 0;
 has HarfBuzz::Font::Cairo %!fonts;
@@ -28,6 +28,12 @@ has Pod::To::Cairo::Style $.style handles<font font-size leading line-height bol
 method read($pod) {
     self.pod2pdf($pod);
 }
+
+submethod TWEAK(:$pod) {
+    self.read($_) with $pod;
+}
+
+method title { ... }
 
 multi method pad(&codez) { $.pad; &codez(); $.pad}
 multi method pad($!pad = 2) { }
@@ -60,10 +66,11 @@ method !style(&codez, Bool :$indent, Bool :$pad, |c) {
 }
 
 method !text-chunk(
-        Str $text,
-        :$width = $!surface.width - self!indent - 2*$!margin,
-        :$height = $!surface.height - $!ty - $!margin,
-        |c) {
+    Str $text,
+    :$width = $!surface.width - self!indent - 2*$!margin,
+    :$height = $!surface.height - $!ty - $!margin,
+    |c,
+) {
     my $font := self!curr-font();
     ::('Pod::To::Cairo::TextChunk').new: :$text, :indent($!tx), :$font, :$!style :$width, :$height, |c;
 }

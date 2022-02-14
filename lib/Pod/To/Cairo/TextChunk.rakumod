@@ -46,16 +46,21 @@ method !cairo-glyphs(
     my Num $y = $y0.Num;
     my int $i = 0;
     my int $j = 0;
+    my $nl = 0;
 
     @nls.push: $!text.chars + 1;
 
     for $shaper.shape -> $glyph {
-        if $glyph.cluster >= @nls[$j] || $x + $glyph.x-offset > $!width {
+        if $glyph.cluster >= @nls[$j] {
             $j++;
-            $x = $x0.Num;
-            $y += $.leading * $.font-size;
+            $nl = 1;
         }
         else {
+            if $nl || $x + $glyph.x-offset > $!width {
+                $x = $x0.Num;
+                $y += $.leading * $.font-size;
+                $nl = 0;
+            }
             $cairo-glyph = $cairo-glyphs[$i++];
             $cairo-glyph.index = $glyph.gid;
             $cairo-glyph.x = $x + $glyph.x-offset;
