@@ -13,13 +13,15 @@ has $.width = 512;
 has $.height = 720;
 has UInt $!indent = 0;
 has $.margin = 20;
-has $!tx = 0; # text-flow x
+has $!tx = $!margin; # text-flow x
 has $!ty = $!margin; # text-flow y
 has UInt $!pad = 0;
 has UInt $!page-num = 0;
 has HarfBuzz::Font::Cairo %!fonts;
 has HarfBuzz::Font::Cairo $!cur-font;
 has Str $!cur-font-patt = '';
+
+enum Tags ( :CODE<Code>, :Paragraph<P> );
 
 has Cairo::Surface:D $.surface is required;
 has Cairo::Context $.ctx .= new: $!surface;
@@ -33,10 +35,10 @@ submethod TWEAK(:$pod) {
     self.read($_) with $pod;
 }
 
-method title { ... }
+method title { warn "ignoring title"; }
 
 multi method pad(&codez) { $.pad; &codez(); $.pad}
-multi method pad($!pad = 2) { }
+multi method pad($!pad = 2) {}
 
 method !pad-here {
     $.say for ^$!pad;
@@ -72,27 +74,35 @@ method !text-chunk(
     |c,
 ) {
     my $font := self!curr-font();
-    ::('Pod::To::Cairo::TextChunk').new: :$text, :indent($!tx), :$font, :$!style :$width, :$height, |c;
+    ::('Pod::To::Cairo::TextChunk').new: :$text, :indent($!tx - $!margin), :$font, :$!style :$width, :$height, |c;
 }
 
 multi method say {
-    $!tx = 0;
+    $!tx = $!margin;
     $!ty += $.line-height;
 }
 
 multi method say($text) {
     self.print($text, :nl);
 }
-method print($text, Bool :$nl) {
-    warn "STUB!";
-    my $chunk = self!text-chunk($text); # not used yet
-    $chunk.print(:$!ctx, :$!tx, :$!ty, :$nl);
+method print($text is copy, Bool :$nl) {
+    self!pad-here;
+    $text ~= "\n" if $nl && !$text.ends-with: "\n";
+    my $chunk = self!text-chunk($text);
+    my $x = $!tx + self!indent;
+    my $y = $!ty;
+    $chunk.print(:$!ctx, :$x, :$y);
+    my \x0 = $!tx;
+    my \y0 = $!ty;
+    $!tx = $!margin + $chunk.cursor.re;
+    $!ty += $chunk.cursor.im;
+    ($chunk.content-height, '');
 }
 method !new-page {
     $!page-num++;
     $!ctx.show_page unless $!page-num == 1;
-    $!tx  = 0;
-    $!ty  = 0;
+    $!tx  = $!margin;
+    $!ty  = $!margin;
 }
 
 method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
@@ -117,11 +127,98 @@ method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
     }
 }
 
+method !code(Str $code is copy, :$inline) {
+    $code .= chomp;
+    self!style: :mono, :indent(!$inline), :tag(CODE), {
+        while $code {
+            $.lines-before = min(+$code.lines, 3)
+                unless $inline;
+            $.font-size *= .8;
+            my (\h, \overflow) = $.print: $code, :!reflow;
+            $code = overflow;
+
+            unless $inline {
+                # draw code-block background
+                my constant pad = 5;
+                my $x0 = self!indent + $!margin;
+                my $width = $!surface.width - $!margin - $x0;
+
+                given $!ctx {
+                    .save;
+                    .rgba(0, 0, 0, 0.1);
+                    .line_width = 1.0;
+                    .rectangle($x0 - pad, $!ty - h - pad, $width + 2*pad, h + 2*pad);
+                    .fill: :preserve;
+                    .rgba(0, 0, 0, 0.25);
+                    .stroke;
+                    .restore;
+                }
+            }
+        }
+    }
+}
+
+multi method pod2pdf(Pod::Block::Named $pod) {
+    $.pad: {
+        given $pod.name {
+            when 'pod'  { $.pod2pdf($pod.contents)     }
+            when 'para' {
+                $.pod2pdf: $pod.contents;
+            }
+            when 'config' { }
+            when 'nested' {
+                self!style: :indent, {
+                    $.pod2pdf: $pod.contents;
+                }
+            }
+            default     {
+                given $pod.name {
+                    when 'TITLE' {
+                        my Str $title = pod2text($pod.contents);
+                        self.title //= $title;
+                        $.pad: {
+                            self!heading: $title, :level(1);
+                        }
+                    }
+                    when 'SUBTITLE' {
+                        $.pad: {
+                            self!heading: pod2text($pod.contents), :level(2);
+                        }
+                    }
+                    default {
+                        warn "unrecognised POD named block: $_";
+                        $.say($_);
+                        $.pod2pdf($pod.contents);
+                    }
+                }
+            }
+        }
+    }
+}
+
+multi method pod2pdf(Pod::Block::Code $pod) {
+    $.pad: {
+        self!code: $pod.contents.join;
+    }
+}
+
 multi method pod2pdf(Pod::Heading $pod) {
     $.pad: {
         my Level $level = min($pod.level, 6);
         self!heading( node2text($pod.contents), :$level);
     }
+}
+
+multi method pod2pdf(Pod::Block::Para $pod) {
+    $.pad: {
+        self!style: :tag(Paragraph), {
+            $.pod2pdf($pod.contents);
+        }
+    }
+}
+
+multi method pod2pdf(Str $pod) {
+    $.print($pod);
 }
 
 multi method pod2pdf(List:D $_) {

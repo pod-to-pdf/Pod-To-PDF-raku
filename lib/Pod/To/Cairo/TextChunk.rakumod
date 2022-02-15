@@ -13,10 +13,9 @@ subset TextDirection of Str where 'ltr'|'rtl';
 
 has Numeric $.width;
 has Numeric $.height;
-has Numeric $.indent = 0;
+has Complex $.cursor = 0 + 0i;
 has HarfBuzz::Font::Cairo:D $.font is required;
 has TextDirection $.direction = 'ltr';
-
 has Str $.text is required;
 has @.overflow is rw is built;
 has Pod::To::Cairo::Style $.style is rw handles <font-size leading space-width shape>;
@@ -42,17 +41,17 @@ method !cairo-glyphs(
     my int @nls = $!text.indices: "\n";
     my Cairo::Glyphs $cairo-glyphs .= new: :elems($shaper.buf.length - +@nls);
     my Cairo::cairo_glyph_t $cairo-glyph;
-    my Num $x = $x0.Num;
-    my Num $y = $y0.Num;
+    my Num $x = $x0.Num + $!cursor.re;
+    my Num $y = $y0.Num + $!cursor.im;
     my int $i = 0;
-    my int $j = 0;
+    my int $line = 0;
     my $nl = 0;
 
     @nls.push: $!text.chars + 1;
 
     for $shaper.shape -> $glyph {
-        if $glyph.cluster >= @nls[$j] {
-            $j++;
+        if $glyph.cluster >= @nls[$line] {
+            $line++;
             $nl = 1;
         }
         else {
@@ -72,14 +71,15 @@ method !cairo-glyphs(
     $cairo-glyphs.x-advance = $.width;
     $cairo-glyphs.y-advance = $y - $y0;
 
+    $!cursor = ($x - $x0) + ($y - $y0)i;
     $cairo-glyphs;
 }
 
-method print(:$ctx!, :$tx! is rw, :$ty! is rw, Bool :$nl) {
-    my $x = $!indent;
-    my $y = 0;
+method content-height { $!cursor.im + $.font-size }
+
+method print(:$ctx!, :$x!, :$y!, Bool :$nl) {
     my $max-lines = ($!height / $.leading).Int;
-    my Cairo::Glyphs $glyphs = self!cairo-glyphs: :x($tx), :y($ty);
+    my Cairo::Glyphs $glyphs = self!cairo-glyphs: :$x, :$y;
     my $elems = $glyphs.elems;
     $ctx.show_glyphs($glyphs);
 }
