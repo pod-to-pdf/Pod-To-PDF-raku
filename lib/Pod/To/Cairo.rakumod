@@ -20,6 +20,8 @@ has UInt $!page-num = 0;
 has HarfBuzz::Font::Cairo %!fonts;
 has HarfBuzz::Font::Cairo $!cur-font;
 has Str $!cur-font-patt = '';
+has Bool $.contents = True;
+has int32 @outline-stack;
 
 enum Tags ( :CODE<Code>, :Document<Document>, :Paragraph<P> );
 
@@ -110,6 +112,12 @@ method !new-page {
     $!ty  = $!margin;
 }
 
+sub dest-name(Str:D $_) {
+    .trim
+    .subst(/\s+/, '_', :g)
+    .subst('#', '', :g);
+}
+
 method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
     self!style: :tag('H' ~ $level), :$underline, {
         my constant HeadingSizes = 20, 16, 13, 11.5, 10, 10;
@@ -128,8 +136,27 @@ method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
             $.italic = True;
         }
 
-        @.say($Title);
+        my Str:D $name = dest-name($Title);
+        $!ctx.tag: CAIRO_TAG_DEST, :$name, {
+            $.say($Title);
+        }
+
+        self!add-toc-entry: $Title, :dest($name), :$level;
     }
+}
+
+method !add-toc-entry(Str:D $Title, Str :$dest!, Level :$level! ) {
+    my Str $name = $Title.subst(/\s+/, ' ', :g); # Tidy a little
+    @!outline-stack.pop while @!outline-stack >= $level;
+    my int32 $parent-id = $_ with @!outline-stack.tail;
+    while @!outline-stack < $level-1 {
+        # e.g. jump from =head1 to =head3
+        # need to insert missing entries
+        $parent-id = $!surface.add_outline: :$parent-id, :$dest;
+        @!outline-stack.push: $parent-id;
+    }
+    my uint32 $toc-id = $!surface.add_outline: :$parent-id, :$name, :$dest;
+    @!outline-stack.push: $toc-id;
 }
 
 method !code(Str $code is copy, :$inline) {
