@@ -28,9 +28,7 @@ method font-size is rw {
 }
 
 method leading { 1.1 }
-method line-height {
-    $.leading * $!font-size;
-}
+method line-height { $.leading * $!font-size; }
 
 method pattern {
 

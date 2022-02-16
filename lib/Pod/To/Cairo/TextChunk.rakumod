@@ -45,20 +45,20 @@ method !cairo-glyphs(
     my Num $y = $y0.Num + $!cursor.im;
     my int $i = 0;
     my int $line = 0;
-    my $nl = 0;
+    my uint $nl = 0;
 
     @nls.push: $!text.chars + 1;
 
     for $shaper.shape -> $glyph {
         if $glyph.cluster >= @nls[$line] {
             $line++;
-            $nl = 1;
+            $nl++;
         }
         else {
-            if $nl || $x + $glyph.x-offset > $!width {
+            while $nl || $x + $glyph.x-offset > $!width {
                 $x = $x0.Num;
                 $y += $.leading * $.font-size;
-                $nl = 0;
+                $nl-- if $nl;
             }
             $cairo-glyph = $cairo-glyphs[$i++];
             $cairo-glyph.index = $glyph.gid;
@@ -81,6 +81,7 @@ method print(:$ctx!, :$x!, :$y!, Bool :$nl) {
     my $max-lines = ($!height / $.leading).Int;
     my Cairo::Glyphs $glyphs = self!cairo-glyphs: :$x, :$y;
     my $elems = $glyphs.elems;
+    $ctx.set_font_size: $.font-size;
     $ctx.show_glyphs($glyphs);
 }
 

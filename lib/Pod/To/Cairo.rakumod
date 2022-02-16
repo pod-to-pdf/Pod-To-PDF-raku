@@ -21,14 +21,16 @@ has HarfBuzz::Font::Cairo %!fonts;
 has HarfBuzz::Font::Cairo $!cur-font;
 has Str $!cur-font-patt = '';
 
-enum Tags ( :CODE<Code>, :Paragraph<P> );
+enum Tags ( :CODE<Code>, :Document<Document>, :Paragraph<P> );
 
 has Cairo::Surface:D $.surface is required;
 has Cairo::Context $.ctx .= new: $!surface;
 has Pod::To::Cairo::Style $.style handles<font font-size leading line-height bold italic mono underline lines-before link> .= new: :$!ctx;
 
 method read($pod) {
-    self.pod2pdf($pod);
+    $!ctx.tag: Document, {
+        self.pod2pdf($pod);
+    }
 }
 
 submethod TWEAK(:$pod) {
@@ -60,11 +62,14 @@ method !curr-font {
     }
 }
 
-method !style(&codez, Bool :$indent, Bool :$pad, |c) {
+method !style(&codez, Bool :$indent, Str :tag($name), Bool :$pad, |c) {
     temp $!style .= clone: |c;
     temp $!indent;
     $!indent += 1 if $indent;
-    $pad ?? $.pad(&codez) !! &codez();
+    $.pad if $pad;
+    my $rv := $name ?? $!ctx.tag($name, &codez) !! &codez();
+    $.pad if $pad;
+    $rv;
 }
 
 method !text-chunk(
@@ -100,7 +105,7 @@ method print($text is copy, Bool :$nl) {
 }
 method !new-page {
     $!page-num++;
-    $!ctx.show_page unless $!page-num == 1;
+    $!surface.show_page unless $!page-num == 1;
     $!tx  = $!margin;
     $!ty  = $!margin;
 }
@@ -233,7 +238,6 @@ multi method pod2pdf($pod) {
 method !indent { 10 * $!indent; }
 
 sub node2text($pod) {
-    warn "stub";
     pod2text($pod);
 }
 
