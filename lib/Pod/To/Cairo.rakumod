@@ -111,7 +111,7 @@ method !new-page {
 }
 
 method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
-    self!style: :$underline, {
+    self!style: :tag('H' ~ $level), :$underline, {
         my constant HeadingSizes = 20, 16, 13, 11.5, 10, 10;
         $.font-size = HeadingSizes[$level - 1];
         if $level == 1 {
