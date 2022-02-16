@@ -47,7 +47,7 @@ jobs:
           # currently developing against the Cairo 'tags-and-toc' branch
           (git clone -b tags-and-toc https://github.com/timo/cairo-p6 && cd cairo-p6 && zef install .)
           # also dependant on unreleased PDF::Tags::Reader changes
-          (git clone https://github.com/pdf-raku/PDF-Tags-Reader-raku && cd /PDF-Tags-Reader-raku && zef install .)
+          (git clone https://github.com/pdf-raku/PDF-Tags-Reader-raku && cd PDF-Tags-Reader-raku && zef install .)
           zef --deps-only install .
       - name: Run Tests
         run: |
