@@ -20,6 +20,7 @@ has Str $.text is required;
 has @.overflow is rw is built;
 has Pod::To::Cairo::Style $.style is rw handles <font-size leading space-width shape>;
 has Bool $.verbatim;
+has UInt $.lines is built;
 
 method !shaper {
     my UInt $direction = $!direction eq 'rtl'
@@ -46,6 +47,7 @@ method !cairo-glyphs(
     my int $i = 0;
     my int $line = 0;
     my uint $nl = 0;
+    $!lines = 0;
 
     @nls.push: $!text.chars + 1;
 
@@ -59,6 +61,7 @@ method !cairo-glyphs(
                 $x = $x0.Num;
                 $y += $.leading * $.font-size;
                 $nl-- if $nl;
+                $!lines++;
             }
             $cairo-glyph = $cairo-glyphs[$i++];
             $cairo-glyph.index = $glyph.gid;
@@ -71,6 +74,7 @@ method !cairo-glyphs(
     $cairo-glyphs.x-advance = $.width;
     $cairo-glyphs.y-advance = $y - $y0;
 
+    $!lines++ unless $x =~= $x0;
     $!cursor = ($x - $x0) + ($y - $y0)i;
     $cairo-glyphs;
 }

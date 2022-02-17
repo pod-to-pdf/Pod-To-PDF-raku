@@ -57,13 +57,14 @@ my $xml = q{<Document>
 </Document>
 };
 
+try require ::('PDF::Tags::Reader');
+if ::('PDF::Tags::Reader') ~~ Failure {
+    skip-rest "PDF::Tags::Reader is required to perform structural PDF testing";
+    exit 0;
+}
+
 subtest 'document structure', {
     plan 1;
-    try require ::('PDF::Tags::Reader');
-    if ::('PDF::Tags::Reader') ~~ Failure {
-        skip-rest "PDF::Tags::Reader is required to perform structural PDF testing";
-        exit 0;
-    }
 
     # PDF::Class is an indirect dependency of PDF::Tags::Reader
     require ::('PDF::Class');

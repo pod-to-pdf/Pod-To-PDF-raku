@@ -93,16 +93,37 @@ multi method say {
 multi method say($text) {
     self.print($text, :nl);
 }
+
 method print($text is copy, Bool :$nl) {
     self!pad-here;
     $text ~= "\n" if $nl && !$text.ends-with: "\n";
     my $chunk = self!text-chunk($text);
     my $x = self!indent;
     my $y = $!ty;
+    if $.link {
+        $!ctx.save;
+        $!ctx.rgb(.1, .1, 1);
+    }
     $chunk.print(:$!ctx, :$x, :$y);
+    if $.link {
+        if $.link.starts-with('#') {
+            my $dest = $.link.substr(1);
+            $!ctx.link: :$dest;
+        }
+        else {
+            my $uri = $.link;
+            my $width = $chunk.lines > 1 ?? $chunk.width !! $chunk.cursor.re - $!tx + $x;
+            my $height = $chunk.content-height;
+            my @rect = [$!tx, $!ty - $.font-size, $width, $height];
+            $!ctx.link: :$uri, :@rect;
+        }
+        $!ctx.restore;
+    }
     $!tx = $x + $chunk.cursor.re;
     $!ty = $y + $chunk.cursor.im;
-    ($chunk.content-height, '');
+    my \w = $chunk.lines > 1 ?? $chunk.width !! $chunk.cursor.re;
+    my \h = $chunk.content-height;
+    (w, h,'');
 }
 method !new-page {
     $!page-num++;
@@ -118,25 +139,23 @@ sub dest-name(Str:D $_) {
 }
 
 method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
-    self!style: :tag('H' ~ $level), :$underline, {
-        my constant HeadingSizes = 20, 16, 13, 11.5, 10, 10;
-        $.font-size = HeadingSizes[$level - 1];
-        if $level == 1 {
-            self!new-page;
-        }
-        elsif $level == 2 {
-            $.lines-before = 3;
-        }
+    my constant HeadingSizes = 20, 16, 13, 11.5, 10, 10;
+    my $font-size = HeadingSizes[$level - 1];
+    my Bool $bold   = $level <= 4;
+    my Bool $italic = $level == 5;
+    my $lines-before = $.lines-before;
 
-        if $level < 5 {
-            $.bold = True;
-        }
-        else {
-            $.italic = True;
-        }
+    if $level == 1 {
+        self!new-page;
+    }
+    elsif $level == 2 {
+        $lines-before = 3;
+    }
+
+    self!style: :tag('H' ~ $level), :$font-size, :$bold, :$italic, :$underline, :$lines-before, {
 
         my Str:D $name = dest-name($Title);
-        $!ctx.tag: CAIRO_TAG_DEST, :$name, {
+        $!ctx.destination: :$name, {
             $.say($Title);
         }
 
@@ -160,12 +179,14 @@ method !add-toc-entry(Str:D $Title, Str :$dest!, Level :$level! ) {
 
 method !code(Str $code is copy, :$inline) {
     $code .= chomp;
-    self!style: :mono, :indent(!$inline), :tag(CODE), {
+    my $font-size = 8;
+    my $lines-before = $.lines-before;
+    $lines-before = min(+$code.lines, 3)
+        unless $inline;
+
+    self!style: :mono, :indent(!$inline), :tag(CODE), :$font-size, :$lines-before, {
         while $code {
-            $.lines-before = min(+$code.lines, 3)
-                unless $inline;
-            $.font-size *= .8;
-            my (\h, \overflow) = $.print: $code, :!reflow;
+            my (\w, \h, \overflow) = @.print: $code, :!reflow;
             $code = overflow;
 
             unless $inline {
@@ -259,13 +280,14 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             self!code: pod2text($pod), :inline;
         }
         when 'T' {
-            temp $.mono = True;
-            $.pod2pdf($pod.contents);
+            self!style: :mono, {
+                $.pod2pdf($pod.contents);
+            }
         }
         when 'K' {
-            temp $.italic = True;
-            temp $.mono = True;
-            $.pod2pdf($pod.contents);
+            self!style: :italic, :mono, {
+                $.pod2pdf($pod.contents);
+            }
         }
         when 'I' {
             self!style: :italic, {
@@ -276,8 +298,9 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             warn "todo Footnotes";
         }
         when 'U' {
-            temp $.underline = True;
-            $.pod2pdf($pod.contents);
+            self!style: :underline, {
+                $.pod2pdf($pod.contents);
+            }
         }
         when 'Z' {
             # invisable
@@ -288,8 +311,8 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
         }
         when 'L' {
             my $text = pod2text($pod.contents);
-            given $pod.meta.head // $text -> $uri {
-                $!ctx.tag: CAIRO_TAG_LINK, :$uri, {
+            given $pod.meta.head // $text -> $link {
+                self!style: :$link, {
                     $.print: $text;
                 }
             }
