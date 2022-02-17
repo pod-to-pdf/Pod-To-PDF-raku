@@ -64,7 +64,7 @@ method !curr-font {
     }
 }
 
-method !style(&codez, Bool :$indent, Str :tag($name), Bool :$pad, |c) {
+method !style(&codez, Bool :$indent, Str :tag($name) is copy, Bool :$pad, |c) {
     temp $!style .= clone: |c;
     temp $!indent;
     $!indent += 1 if $indent;
@@ -76,12 +76,13 @@ method !style(&codez, Bool :$indent, Str :tag($name), Bool :$pad, |c) {
 
 method !text-chunk(
     Str $text,
-    :$width = $!surface.width - self!indent - 2*$!margin,
+    :$width = $!surface.width - self!indent - $!margin,
     :$height = $!surface.height - $!ty - $!margin,
     |c,
 ) {
     my $font := self!curr-font();
-    ::('Pod::To::Cairo::TextChunk').new: :$text, :indent($!tx - $!margin), :$font, :$!style :$width, :$height, |c;
+    my Complex $cursor = ($!tx - self!indent) + 0i;
+    ::('Pod::To::Cairo::TextChunk').new: :$text, :$cursor, :$font, :$!style :$width, :$height, |c;
 }
 
 multi method say {
@@ -96,13 +97,11 @@ method print($text is copy, Bool :$nl) {
     self!pad-here;
     $text ~= "\n" if $nl && !$text.ends-with: "\n";
     my $chunk = self!text-chunk($text);
-    my $x = $!tx + self!indent;
+    my $x = self!indent;
     my $y = $!ty;
     $chunk.print(:$!ctx, :$x, :$y);
-    my \x0 = $!tx;
-    my \y0 = $!ty;
-    $!tx = $!margin + $chunk.cursor.re;
-    $!ty += $chunk.cursor.im;
+    $!tx = $x + $chunk.cursor.re;
+    $!ty = $y + $chunk.cursor.im;
     ($chunk.content-height, '');
 }
 method !new-page {
@@ -172,7 +171,7 @@ method !code(Str $code is copy, :$inline) {
             unless $inline {
                 # draw code-block background
                 my constant pad = 5;
-                my $x0 = self!indent + $!margin;
+                my $x0 = self!indent;
                 my $width = $!surface.width - $!margin - $x0;
 
                 given $!ctx {
@@ -249,6 +248,59 @@ multi method pod2pdf(Pod::Block::Para $pod) {
     }
 }
 
+multi method pod2pdf(Pod::FormattingCode $pod) {
+    given $pod.type {
+        when 'B' {
+            self!style: :bold, {
+                $.pod2pdf($pod.contents);
+            }
+        }
+        when 'C' {
+            self!code: pod2text($pod), :inline;
+        }
+        when 'T' {
+            temp $.mono = True;
+            $.pod2pdf($pod.contents);
+        }
+        when 'K' {
+            temp $.italic = True;
+            temp $.mono = True;
+            $.pod2pdf($pod.contents);
+        }
+        when 'I' {
+            self!style: :italic, {
+                $.pod2pdf($pod.contents);
+            }
+        }
+        when 'N' {
+            warn "todo Footnotes";
+        }
+        when 'U' {
+            temp $.underline = True;
+            $.pod2pdf($pod.contents);
+        }
+        when 'Z' {
+            # invisable
+        }
+        when 'X' {
+            warn "indexing (X) not yet handled";
+            $.pod2pdf($pod.contents);
+        }
+        when 'L' {
+            my $text = pod2text($pod.contents);
+            given $pod.meta.head // $text -> $uri {
+                $!ctx.tag: CAIRO_TAG_LINK, :$uri, {
+                    $.print: $text;
+                }
+            }
+        }
+        default {
+            warn "todo: POD formatting code: $_";
+            $.pod2pdf($pod.contents);
+        }
+    }
+}
+
 multi method pod2pdf(Str $pod) {
     $.print($pod);
 }
@@ -262,7 +314,7 @@ multi method pod2pdf($pod) {
     $.say: pod2text($pod);
 }
 
-method !indent { 10 * $!indent; }
+method !indent { $!margin + 10 * $!indent; }
 
 sub node2text($pod) {
     pod2text($pod);
