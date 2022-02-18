@@ -275,7 +275,6 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
     given $pod.type {
         when 'B' {
             self!style: :bold, {
-                warn $!style.bold;
                 $.pod2pdf($pod.contents);
             }
         }

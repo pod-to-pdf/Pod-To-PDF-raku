@@ -10,18 +10,20 @@ has Bool $.mono;
 has UInt $.lines-before = 1;
 has $.font-size = 10;
 has $.link;
-has FontConfig $!pattern;
+has FontConfig $.pattern is built;
 
+method clone { nextwith :pattern(FontConfig), |%_; }
 method leading { 1.1 }
 method line-height { $.leading * $!font-size; }
 
+method family { $!mono ?? 'monospace' !! 'serif'; }
+
 method pattern {
-##    $!pattern //= do {
-        my $family = $!mono ?? 'monospace' !! 'serif';
-        my %patt = :$family;
+    $!pattern //= do {
+        my %patt = :$.family;
         %patt<slant> = 'italic' if $!italic;
         %patt<weight>  = 'bold' if $!bold;
         FontConfig.new: |%patt;
-##    }
+    }
 }
 
