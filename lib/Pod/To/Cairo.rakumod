@@ -60,6 +60,7 @@ method !curr-font {
             $!cur-font-patt = $key;
             $!ctx.set_font_face: $!cur-font.cairo-font;
         }
+        $!ctx.set_font_size($!style.font-size);
         $!cur-font;
     }
 }
@@ -105,6 +106,7 @@ method print($text is copy, Bool :$nl) {
         $!ctx.rgb(.1, .1, 1);
     }
     $chunk.print(:$!ctx, :$x, :$y);
+    self!underline($chunk) if $.underline;
     if $.link {
         if $.link.starts-with('#') {
             my $dest = $.link.substr(1);
@@ -273,6 +275,7 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
     given $pod.type {
         when 'B' {
             self!style: :bold, {
+                warn $!style.bold;
                 $.pod2pdf($pod.contents);
             }
         }
@@ -335,6 +338,33 @@ multi method pod2pdf(List:D $_) {
 multi method pod2pdf($pod) {
     warn "fallback render of {$pod.WHAT.raku}";
     $.say: pod2text($pod);
+}
+
+method !underline-position {
+    (self!curr-font.ft-face.underline-position // -100) * $.font-size / 1000;
+}
+
+method !underline-thickness {
+    (self!curr-font.ft-face.underline-thickness // 50) * $.font-size / 1000;
+}
+
+method !underline($tc, :$tab = $!margin + self!indent, ) {
+    my \dy = self!underline-position;
+    my $linewidth = self!underline-thickness;
+    for $tc.lines {
+        self!draw-line(.x, .y - dy, .x1, :$linewidth);
+    }
+}
+
+method !draw-line($x0, $y0, $x1, $y1 = $y0, :$linewidth = 1) {
+    given $!ctx {
+        .save;
+        .line_width = $linewidth;
+        .move_to: $x0, $y0;
+        .line_to: $x1, $y1;
+        .stroke;
+        .restore;
+    }
 }
 
 method !indent { $!margin + 10 * $!indent; }

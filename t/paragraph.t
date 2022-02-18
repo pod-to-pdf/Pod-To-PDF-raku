@@ -95,4 +95,4 @@ paragraph
 
 =para sanity test of N<if you click, here, you should got back to the paragraph> footnotes.
 
-=para Paragraph with B<formatting>, C<code> and L<links|#blah>.
+=para Paragraph U<with> B<formatting>, C<code> and L<links|#blah>.
