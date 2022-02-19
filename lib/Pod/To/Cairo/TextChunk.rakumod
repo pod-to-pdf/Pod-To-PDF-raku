@@ -41,36 +41,58 @@ method !shaper {
 }
 
 #| Return a set of Cairo compatible shaped glyphs
-method !cairo-glyphs(
+method !layout(
     HarfBuzz::Shaper:D :$shaper = self!shaper,
     Numeric :x($x0) = 0e0, Numeric :y($y0) = 0e0,
-    |c --> Cairo::Glyphs) is export(:cairo-glyphs) {
+    |c --> Cairo::Glyphs) {
     my int @nls = $!text.indices: "\n";
-    my Cairo::Glyphs $cairo-glyphs .= new: :elems($shaper.buf.length - +@nls);
+    my Cairo::Glyphs $layout .= new: :elems($shaper.buf.length - +@nls);
     my Cairo::cairo_glyph_t $cairo-glyph;
     my Num $x = $x0.Num + $!cursor.re;
     my Num $y = $y0.Num + $!cursor.im;
-    my int $i = 0;
     my int $line = 0;
     my uint $nl = 0;
+    my uint $word-len = 0;;
     @!lines = Line.new: :$x, :$y;
-
     @nls.push: $!text.chars + 1;
+    my int $n = $shaper.elems;
+    my int $j = 0;
+    my int $next-nl = @nls[0];
+    my \space = $!font.ft-face.glyph-index: ' ';
+    my int $wb-i;
+    my int $wb-j;
 
-    for $shaper.shape -> $glyph {
-        if $glyph.cluster >= @nls[$line] {
-            $line++;
+    loop (my int $i = 0; $i < $n; $i++) {
+        my $glyph = $shaper[$i];
+        if $glyph.cluster >= $next-nl {
+            $next-nl = @nls[++$line];
             $nl++;
         }
         else {
-            while $nl || $x + $glyph.x-offset > $!width {
+            if $glyph.gid == space {
+                if $wb-i && $x + $glyph.x-advance >= $!width {
+                    # word exceeds line length. backup this word and
+                    # restart on next line
+                    $nl ||= 1;
+                    $i = $wb-i;
+                    $j = $wb-j;
+                    $wb-i = 0;
+                    $glyph = $shaper[$i];
+                }
+                else {
+                    $wb-i = $i + 1;
+                    $wb-j = $j;
+                }
+            }
+
+            while $nl {
                 @!lines.tail.x1 = $x;
                 $x = $x0.Num;
                 $y += $.leading * $.font-size;
                 $nl-- if $nl;
                 @!lines.push: Line.new: :$x, :$y;
             }
-            $cairo-glyph = $cairo-glyphs[$i++];
+            $cairo-glyph = $layout[$j++];
             $cairo-glyph.index = $glyph.gid;
             $cairo-glyph.x = $x + $glyph.x-offset;
             $cairo-glyph.y = $y + $glyph.y-offset;
@@ -78,19 +100,19 @@ method !cairo-glyphs(
         }
     }
 
-    $cairo-glyphs.x-advance = $.width;
-    $cairo-glyphs.y-advance = $y - $y0;
+    $layout.x-advance = $.width;
+    $layout.y-advance = $y - $y0;
 
     @!lines.tail.x1 = $x;
     $!cursor = ($x - $x0) + ($y - $y0)i;
-    $cairo-glyphs;
+    $layout;
 }
 
 method content-height { $!cursor.im + $.font-size }
 
 method print(:$ctx!, :$x!, :$y!, Bool :$nl) {
     my $max-lines = ($!height / $.leading).Int;
-    my Cairo::Glyphs $glyphs = self!cairo-glyphs: :$x, :$y;
+    my Cairo::Glyphs $glyphs = self!layout: :$x, :$y;
     my $elems = $glyphs.elems;
     $ctx.set_font_size: $.font-size;
     $ctx.show_glyphs($glyphs);
