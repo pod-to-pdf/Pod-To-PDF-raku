@@ -13,13 +13,15 @@ subset TextDirection of Str where 'ltr'|'rtl';
 
 has Numeric $.width;
 has Numeric $.height;
-has Complex $.cursor = 0 + 0i;
+has Complex $.flow = 0 + 0i;
 has HarfBuzz::Font::Cairo:D $.font is required;
 has TextDirection $.direction = 'ltr';
 has Str $.text is required;
 has @.overflow is rw is built;
 has Pod::To::Cairo::Style $.style is rw handles <font-size leading space-width shape>;
 has Bool $.verbatim;
+has Cairo::Glyphs $!glyphs;
+
 class Line {
     has $.x;
     has $.y;
@@ -27,6 +29,12 @@ class Line {
     method width { $!x1 - $!x }
 }
 has Line @.lines is built;
+
+submethod TWEAK(:$x!, :$y!) {
+##    $!text ~= ' ' if $!flow.re > 0;
+##    my $max-lines = ($!height / self.leading).Int;
+    $!glyphs = self!layout: :$x, :$y;
+}
 
 method !shaper {
     my UInt $direction = $!direction eq 'rtl'
@@ -48,50 +56,63 @@ method !layout(
     my int @nls = $!text.indices: "\n";
     my Cairo::Glyphs $layout .= new: :elems($shaper.buf.length - +@nls);
     my Cairo::cairo_glyph_t $cairo-glyph;
-    my Num $x = $x0.Num + $!cursor.re;
-    my Num $y = $y0.Num + $!cursor.im;
-    my int $line = 0;
+    my Num $x = $x0.Num + $!flow.re;
+    my Num $y = $y0.Num + $!flow.im;
     my uint $nl = 0;
-    my uint $word-len = 0;;
     @!lines = Line.new: :$x, :$y;
-    @nls.push: $!text.chars + 1;
     my int $n = $shaper.elems;
+    @nls.push: $!text.chars;
     my int $j = 0;
-    my int $next-nl = @nls[0];
+    my int $next-nl = @nls.shift;
     my \space = $!font.ft-face.glyph-index: ' ';
     my int $wb-i;
     my int $wb-j;
+    my $glyph;
+    my Bool $first-word = ! $!flow.re;
+    my Bool $word-wrap;
 
     loop (my int $i = 0; $i < $n; $i++) {
-        my $glyph = $shaper[$i];
-        if $glyph.cluster >= $next-nl {
-            $next-nl = @nls[++$line];
+        $glyph = $shaper[$i];
+        if $glyph.cluster == $next-nl {
+            $next-nl = @nls.shift;
             $nl++;
         }
         else {
             if $glyph.gid == space {
-                if $wb-i && $x + $glyph.x-advance >= $!width {
-                    # word exceeds line length. backup this word and
-                    # restart on next line
-                    $nl ||= 1;
-                    $i = $wb-i;
-                    $j = $wb-j;
-                    $wb-i = 0;
-                    $glyph = $shaper[$i];
+                if ($x - $x0) > $!width {
+                    $word-wrap = True;
                 }
                 else {
                     $wb-i = $i + 1;
                     $wb-j = $j;
                 }
+                $first-word = False;
+            }
+            elsif $i == $n - 1 && $x > $!width && !$first-word {
+                $word-wrap = True;
+            }
+
+            if $word-wrap {
+                # word exceeds line length. backup this word and
+                # restart on next line
+                $nl ||= 1;
+                $i = $wb-i;
+                $j = $wb-j;
+                $wb-i = $i + 1;
+                $glyph = $shaper[$i];
+                $word-wrap = False;
             }
 
             while $nl {
+                $first-word = True;
                 @!lines.tail.x1 = $x;
                 $x = $x0.Num;
                 $y += $.leading * $.font-size;
                 $nl-- if $nl;
                 @!lines.push: Line.new: :$x, :$y;
+                $wb-i = 0;
             }
+
             $cairo-glyph = $layout[$j++];
             $cairo-glyph.index = $glyph.gid;
             $cairo-glyph.x = $x + $glyph.x-offset;
@@ -104,17 +125,15 @@ method !layout(
     $layout.y-advance = $y - $y0;
 
     @!lines.tail.x1 = $x;
-    $!cursor = ($x - $x0) + ($y - $y0)i;
+    $!flow = ($x - $x0) + ($y - $y0)i;
     $layout;
 }
 
-method content-height { $!cursor.im + $.font-size }
+method content-height { $!flow.im + $.font-size }
 
-method print(:$ctx!, :$x!, :$y!, Bool :$nl) {
-    my $max-lines = ($!height / $.leading).Int;
-    my Cairo::Glyphs $glyphs = self!layout: :$x, :$y;
-    my $elems = $glyphs.elems;
+method print(:$ctx!) {
+    my $elems = $!glyphs.elems;
     $ctx.set_font_size: $.font-size;
-    $ctx.show_glyphs($glyphs);
+    $ctx.show_glyphs($!glyphs);
 }
 

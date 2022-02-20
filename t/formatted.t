@@ -21,7 +21,7 @@ my $xml = q{<Document>
     This text is of <Span FontStyle="bold">fundamental significance</Span>.
   </P>
   <P>
-    This text is verbatim C<with> B<disarmed> Z<formatting>.
+    This text is verbatim &lt;with&gt; B&lt;disarmed&gt; Z&lt;formatting&gt;.
   </P>
   <P>
     This text is to be replaced.

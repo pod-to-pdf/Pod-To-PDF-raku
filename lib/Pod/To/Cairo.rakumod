@@ -82,12 +82,12 @@ method !text-chunk(
     |c,
 ) {
     my $font := self!curr-font();
-    my Complex $cursor = ($!tx - self!indent) + 0i;
-    ::('Pod::To::Cairo::TextChunk').new: :$text, :$cursor, :$font, :$!style :$width, :$height, |c;
+    my Complex $flow = ($!tx - self!indent) + 0i;
+    ::('Pod::To::Cairo::TextChunk').new: :$text, :$flow, :$font, :$!style :$width, :$height, |c;
 }
 
 multi method say {
-    $!tx = $!margin;
+    $!tx = self!indent;
     $!ty += $.line-height;
 }
 
@@ -95,35 +95,48 @@ multi method say($text) {
     self.print($text, :nl);
 }
 
+method !link_begin($chunk, :$x!, :$y!) {
+    if $.link.starts-with('#') {
+        my $dest = $.link.substr(1);
+        $!ctx.link_begin: :$dest;
+    }
+    else {
+        my $uri = $.link;
+        my $width = $chunk.lines > 1 ?? $chunk.width !! $chunk.flow.re - $!tx + $x;
+        my $height = $chunk.content-height;
+        my @rect = [$!tx, $!ty - $.font-size, $width, $height];
+        $!ctx.link_begin: :$uri, :@rect;
+    }
+}
+
 method print($text is copy, Bool :$nl) {
     self!pad-here;
     $text ~= "\n" if $nl && !$text.ends-with: "\n";
-    my $chunk = self!text-chunk($text);
     my $x = self!indent;
     my $y = $!ty;
+    my $chunk = self!text-chunk($text, :$x, :$y);
     if $.link {
+        self!link_begin: $chunk, :$x, :$y;
         $!ctx.save;
         $!ctx.rgb(.1, .1, 1);
     }
-    $chunk.print(:$!ctx, :$x, :$y);
+
+    $chunk.print(:$!ctx);
     self!underline($chunk) if $.underline;
+
     if $.link {
-        if $.link.starts-with('#') {
-            my $dest = $.link.substr(1);
-            $!ctx.link: :$dest;
-        }
-        else {
-            my $uri = $.link;
-            my $width = $chunk.lines > 1 ?? $chunk.width !! $chunk.cursor.re - $!tx + $x;
-            my $height = $chunk.content-height;
-            my @rect = [$!tx, $!ty - $.font-size, $width, $height];
-            $!ctx.link: :$uri, :@rect;
-        }
         $!ctx.restore;
+        $!ctx.link_end;
     }
-    $!tx = $x + $chunk.cursor.re;
-    $!ty = $y + $chunk.cursor.im;
-    my \w = $chunk.lines > 1 ?? $chunk.width !! $chunk.cursor.re;
+
+    if $nl {
+        $!tx = $!margin;
+    }
+    else {
+        $!tx = $x + $chunk.flow.re;
+    }
+    $!ty = $y + $chunk.flow.im;
+    my \w = $chunk.lines > 1 ?? $chunk.width !! $chunk.flow.re;
     my \h = $chunk.content-height;
     (w, h,'');
 }
@@ -347,7 +360,7 @@ method !underline-thickness {
     (self!curr-font.ft-face.underline-thickness // 50) * $.font-size / 1000;
 }
 
-method !underline($tc, :$tab = $!margin + self!indent, ) {
+method !underline($tc, :$tab = self!indent, ) {
     my \dy = self!underline-position;
     my $linewidth = self!underline-thickness;
     for $tc.lines {

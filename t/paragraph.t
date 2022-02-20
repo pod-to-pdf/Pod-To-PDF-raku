@@ -45,6 +45,9 @@ my $xml = q{<Document>
   <P>
     Paragraph with formatting, <Code>code</Code> and <Link href="#blah">links</Link>.
   </P>
+  <P>
+    aaaaabbbbbcccccdddddeeeeeﬀﬀfggggghhhhhiiiiijjjjjkkkkklllllmmmmmnnnnnooooopppppqqqqqrrrrrssssstttttuuuuuv
+  </P>
   <Note>
     <Lbl>
       <Link>[1]</Link>
@@ -96,3 +99,5 @@ paragraph
 =para sanity test of N<if you click, here, you should got back to the paragraph> footnotes.
 
 =para Paragraph U<with> B<formatting>, C<code> and L<links|#blah>.
+
+=para aaaaabbbbbcccccdddddeeeeefffffggggghhhhhiiiiijjjjjkkkkklllllmmmmmnnnnnooooopppppqqqqqrrrrrssssstttttuuuuuvvvvvwwwwwxxxxxyyyyyzzzzz
