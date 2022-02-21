@@ -25,7 +25,7 @@ has Str $!cur-font-patt = '';
 has Bool $.contents = True;
 has int32 @outline-stack;
 
-enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Paragraph<P>, :Table<Table>, :TableBody<TBody>, :TableHead<TH>, :TableData<TD>, :TableRow<TR> );
+enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Paragraph<P>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
 has Cairo::Surface:D $.surface is required;
 has Cairo::Context $.ctx .= new: $!surface;
@@ -204,48 +204,50 @@ my constant hpad = 10;
 
 method !table-row(@row, @widths, Bool :$header) {
     if +@row -> \cols {
-        my @overflow;
-        # simple fixed column widths, for now
-        self!ctx;
-        my $tab = self!indent;
-        my $row-height = 0;
-        my $height = $!surface.height - $!ty - $!margin;
-        my $cell-tag = $header ?? TableHead !! TableData;
-        my $head-space = $.line-height - $.font-size;
+        $!ctx.tag: TableRow, {
+            my @overflow;
+            # simple fixed column widths, for now
+            self!ctx;
+            my $tab = self!indent;
+            my $row-height = 0;
+            my $height = $!surface.height - $!ty - $!margin;
+            my $cell-tag = $header ?? TableHeader !! TableData;
+            my $head-space = $.line-height - $.font-size;
 
-        for ^cols {
-            my $width = @widths[$_];
-            if @row[$_] -> $tb is rw {
-                if $tb.width > $width || $tb.height > $height {
-                    $tb .= clone: :$width, :$height;
-                }
-                $!ctx.tag: $cell-tag, {
-                    $tb.print: :$!ctx, :x($tab), :y($!ty);
-                    if $header {
-                        # draw underline
-                        my $y = $!ty - self!underline-position + $head-space;
-                        self!draw-line: $tab, $y, $tab + $width;
+            for ^cols {
+                my $width = @widths[$_];
+                if @row[$_] -> $tb is rw {
+                    if $tb.content-width > $width || $tb.content-height > $height {
+                        $tb .= clone: :$width, :$height;
+                    }
+                    $!ctx.tag: $cell-tag, {
+                        $tb.print: :$!ctx, :x($tab), :y($!ty);
+                        if $header {
+                            # draw underline
+                            my $y = $!ty - self!underline-position + $head-space;
+                            self!draw-line: $tab, $y, $tab + $width;
+                        }
+                    }
+                    given $tb.content-height {
+                        $row-height = $_ if $_ > $row-height;
+                    }
+                    if $tb.overflow -> $overflow {
+                        my $text = $overflow.join;
+                        @overflow[$_] = $tb.clone: :$text, :$width, :height(Inf);
                     }
                 }
-                given $tb.content-height {
-                    $row-height = $_ if $_ > $row-height;
-                }
-                if $tb.overflow -> $overflow {
-                    my $text = $overflow.join;
-                    @overflow[$_] = $tb.clone: :$text, :$width, :height(Inf);
+                $tab += $width + hpad;
+            }
+            if @overflow {
+                # continue table
+                self!style: :lines-before(3), {
+                    self!table-row(@overflow, @widths, :$header);
                 }
             }
-            $tab += $width + hpad;
-        }
-        if @overflow {
-            # continue table
-            self!style: :lines-before(3), {
-                self!table-row(@overflow, @widths, :$header);
+            else {
+                $!ty += $row-height + vpad;
+                $!ty += $head-space if $header;
             }
-        }
-        else {
-            $!ty += $row-height + vpad;
-            $!ty += $head-space if $header;
         }
     }
 }
@@ -271,7 +273,7 @@ method !build-table($pod, @table) {
     }
 
     my $cols = @table.max: *.Int;
-    my @widths = (^$cols).map: -> $col { @table.map({.[$col].?width // 0}).max };
+    my @widths = (^$cols).map: -> $col { @table.map({.[$col].?content-width // 0}).max };
    fit-widths(total-width - hpad * (@widths-1), @widths);
    @widths;
 }
@@ -299,9 +301,7 @@ multi method pod2pdf(Pod::Block::Table $pod) {
                      for @table {
                          my @row = .List;
                          if @row {
-                             $!ctx.tag: TableRow, {
-                                 self!table-row: @row, @widths;
-                             }
+                             self!table-row: @row, @widths;
                          }
                      }
                 }

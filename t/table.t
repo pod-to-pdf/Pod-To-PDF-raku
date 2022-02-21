@@ -180,7 +180,10 @@ my $xml = q{<Document>
           3 3
         </TD>
         <TD>
-          This should definitely wrap. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
+          This should deﬁnitely wrap. Lorem
+          ipsum dolor sit amet, consectetur
+          adipiscing elit, sed do eiusmod
+          tempor incididunt
         </TD>
       </TR>
       <TR>

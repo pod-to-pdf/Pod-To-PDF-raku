@@ -22,6 +22,7 @@ has @.overflow is rw is built;
 has Pod::To::Cairo::Style $.style is rw handles <font-size leading space-width shape>;
 has Bool $.verbatim;
 has Cairo::Glyphs $!glyphs;
+has UInt $.glyph-elems;
 has Numeric:D $.x = 0;
 has Numeric:D $.y = 0;
 
@@ -61,13 +62,13 @@ method layout(
     HarfBuzz::Shaper:D :$shaper = self!shaper,
     |c --> Cairo::Glyphs) {
     my int @nls = $!text.indices: "\n";
-    $!glyphs .= new: :elems($shaper.buf.length - +@nls);
+    my int $n = $shaper.elems;
+    $!glyphs .= new: :elems($n - +@nls);
     my Cairo::cairo_glyph_t $cairo-glyph;
     my Num $x = $!x.Num + $!start.re;
     my Num $y = $!y.Num + $!start.im;
     my uint $nl = 0;
     @!lines = Line.new: :$x, :$y;
-    my int $n = $shaper.elems;
     @nls.push: $!text.chars;
     my int $j = 0;
     my int $next-nl = @nls.shift;
@@ -127,6 +128,7 @@ method layout(
         }
     }
 
+    $!glyph-elems = $j;
     $!glyphs.x-advance = $.width;
     $!glyphs.y-advance = $y - $!y;
 
@@ -136,6 +138,7 @@ method layout(
 }
 
 method content-height { $!flow.im + $.font-size }
+method content-width  { @!lines>>.x1.max - $!x }
 
 method !translate($dx, $dy) {
     for 0 ..^ $!glyphs.elems {
@@ -158,6 +161,6 @@ method print(:$ctx!, :$x = $!x, :$y = $!y) {
         unless $x =~= $!x && $y =~= $!y;
 
     $ctx.set_font_size: $.font-size;
-    $ctx.show_glyphs($!glyphs);
+    $ctx.show_glyphs($!glyphs, $!glyph-elems);
 }
 
