@@ -8,11 +8,13 @@ use FontConfig;
 use Pod::To::Text;
 
 subset Level of Int:D where 1..6;
+my constant Gutter = 3;
 
 has $.width = 512;
 has $.height = 720;
 has UInt $!indent = 0;
 has $.margin = 20;
+has $!gutter = Gutter;
 has $!tx = $!margin; # text-flow x
 has $!ty = $!margin; # text-flow y
 has UInt $!pad = 0;
@@ -23,7 +25,7 @@ has Str $!cur-font-patt = '';
 has Bool $.contents = True;
 has int32 @outline-stack;
 
-enum Tags ( :CODE<Code>, :Document<Document>, :Paragraph<P> );
+enum Tags ( :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Paragraph<P> );
 
 has Cairo::Surface:D $.surface is required;
 has Cairo::Context $.ctx .= new: $!surface;
@@ -47,30 +49,32 @@ multi method pad($!pad = 2) {}
 method !pad-here {
     $.say for ^$!pad;
     $!pad = 0;
+    self!ctx;
 }
 
 method !curr-font {
     given $!style.pattern -> FontConfig $patt {
         my $key := $patt.Str;
+        my $ctx := self!ctx;
         unless $key eq $!cur-font-patt {
             $!cur-font = %!fonts{$key} //= do {
                 my Str:D $file = $patt.match.file;
                 HarfBuzz::Font::Cairo.new: :$file;
             }
             $!cur-font-patt = $key;
-            $!ctx.set_font_face: $!cur-font.cairo-font;
+            $ctx.set_font_face: $!cur-font.cairo-font;
         }
-        $!ctx.set_font_size($!style.font-size);
+        $ctx.set_font_size($!style.font-size);
         $!cur-font;
     }
 }
 
-method !style(&codez, Bool :$indent, Str :tag($name) is copy, Bool :$pad, |c) {
+method !style(&codez, Bool :$indent, Str :tag($name), Bool :$pad, |c) {
     temp $!style .= clone: |c;
     temp $!indent;
     $!indent += 1 if $indent;
     $.pad if $pad;
-    my $rv := $name ?? $!ctx.tag($name, &codez) !! &codez();
+    my $rv := $name ?? self!ctx.tag($name, &codez) !! &codez();
     $.pad if $pad;
     $rv;
 }
@@ -98,14 +102,14 @@ multi method say($text) {
 method !link_begin($chunk, :$x!, :$y!) {
     if $.link.starts-with('#') {
         my $dest = $.link.substr(1);
-        $!ctx.link_begin: :$dest;
+        self!ctx.link_begin: :$dest;
     }
     else {
         my $uri = $.link;
         my $width = $chunk.lines > 1 ?? $chunk.width !! $chunk.flow.re - $!tx + $x;
         my $height = $chunk.content-height;
         my @rect = [$!tx, $!ty - $.font-size, $width, $height];
-        $!ctx.link_begin: :$uri, :@rect;
+        self!ctx.link_begin: :$uri, :@rect;
     }
 }
 
@@ -143,8 +147,19 @@ method print($text is copy, Bool :$nl) {
 method !new-page {
     $!page-num++;
     $!surface.show_page unless $!page-num == 1;
-    $!tx  = $!margin;
+    $!tx  = self!indent;
     $!ty  = $!margin;
+}
+
+method !ctx {
+    my $y = $!ty + ($.lines-before + $!gutter) * $.line-height;
+    if $y > $!height - $!margin {
+        self!new-page;
+    }
+    elsif $!tx > $!margin && $!tx > $!width - self!indent {
+        self.say;
+    }
+    $!ctx;
 }
 
 sub dest-name(Str:D $_) {
@@ -170,7 +185,7 @@ method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
     self!style: :tag('H' ~ $level), :$font-size, :$bold, :$italic, :$underline, :$lines-before, {
 
         my Str:D $name = dest-name($Title);
-        $!ctx.destination: :$name, {
+        self!ctx.destination: :$name, {
             $.say($Title);
         }
 
@@ -258,6 +273,30 @@ multi method pod2pdf(Pod::Block::Named $pod) {
                         $.pod2pdf($pod.contents);
                     }
                 }
+            }
+        }
+    }
+}
+
+multi method pod2pdf(Pod::Item $pod) {
+    $.pad: {
+        self!style: :tag(ListItem), {
+            {
+                my constant BulletPoints = ("\c[BULLET]",
+                                            "\c[WHITE BULLET]",
+                                            '-');
+                my Level $list-level = min($pod.level // 1, 3);
+                my $bp = BulletPoints[$list-level - 1];
+                self!style: :tag(Label), {
+                    $.print: $bp;
+                }
+            }
+
+            # slightly iffy $!ty fixup
+            $!ty -= 2 * $.line-height;
+
+            self!style: :tag(ListBody), :indent, {
+                $.pod2pdf($pod.contents);
             }
         }
     }
@@ -369,7 +408,7 @@ method !underline($tc, :$tab = self!indent, ) {
 }
 
 method !draw-line($x0, $y0, $x1, $y1 = $y0, :$linewidth = 1) {
-    given $!ctx {
+    given self!ctx {
         .save;
         .line_width = $linewidth;
         .move_to: $x0, $y0;
