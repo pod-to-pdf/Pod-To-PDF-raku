@@ -25,7 +25,7 @@ has Str $!cur-font-patt = '';
 has Bool $.contents = True;
 has int32 @outline-stack;
 
-enum Tags ( :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Paragraph<P> );
+enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Paragraph<P>, :Table<Table>, :TableBody<TBody>, :TableHead<TH>, :TableData<TD>, :TableRow<TR> );
 
 has Cairo::Surface:D $.surface is required;
 has Cairo::Context $.ctx .= new: $!surface;
@@ -81,12 +81,12 @@ method !style(&codez, Bool :$indent, Str :tag($name), Bool :$pad, |c) {
 
 method !text-chunk(
     Str $text,
-    :$width = $!surface.width - self!indent - $!margin,
-    :$height = $!surface.height - $!ty - $!margin,
+    Numeric :$width = $!surface.width - self!indent - $!margin,
+    Numeric :$height = $!surface.height - $!ty - $!margin,
+    Complex :$flow = ($!tx - self!indent) + 0i;
     |c,
 ) {
     my $font := self!curr-font();
-    my Complex $flow = ($!tx - self!indent) + 0i;
     ::('Pod::To::Cairo::TextChunk').new: :$text, :$flow, :$font, :$!style :$width, :$height, |c;
 }
 
@@ -119,6 +119,7 @@ method print($text is copy, Bool :$nl) {
     my $x = self!indent;
     my $y = $!ty;
     my $chunk = self!text-chunk($text, :$x, :$y);
+
     if $.link {
         self!link_begin: $chunk, :$x, :$y;
         $!ctx.save;
@@ -135,11 +136,12 @@ method print($text is copy, Bool :$nl) {
 
     if $nl {
         $!tx = $!margin;
+        $!ty += $chunk.content-height;
     }
     else {
         $!tx = $x + $chunk.flow.re;
+        $!ty = $y + $chunk.flow.im;
     }
-    $!ty = $y + $chunk.flow.im;
     my \w = $chunk.lines > 1 ?? $chunk.width !! $chunk.flow.re;
     my \h = $chunk.content-height;
     (w, h,'');
@@ -162,10 +164,150 @@ method !ctx {
     $!ctx;
 }
 
+# a simple algorithm for sizing table column widths
+sub fit-widths($width is copy, @widths) {
+    my $cell-width = $width / +@widths;
+    my @idx;
+
+    for @widths.pairs {
+        if .value <= $cell-width {
+            $width -= .value;
+        }
+        else {
+            @idx.push: .key;
+        }
+    }
+
+    if @idx {
+        if @idx < @widths {
+            my @over;
+            my $i = 0;
+            @over[$_] := @widths[ @idx[$_] ]
+                for  ^+@idx;
+            fit-widths($width, @over);
+        }
+        else {
+            $_ = $cell-width
+                  for @widths;
+        }
+    }
+}
+
 sub dest-name(Str:D $_) {
     .trim
     .subst(/\s+/, '_', :g)
     .subst('#', '', :g);
+}
+
+my constant vpad = 2;
+my constant hpad = 10;
+
+method !table-row(@row, @widths, Bool :$header) {
+    if +@row -> \cols {
+        my @overflow;
+        # simple fixed column widths, for now
+        self!ctx;
+        my $tab = self!indent;
+        my $row-height = 0;
+        my $height = $!surface.height - $!ty - $!margin;
+        my $cell-tag = $header ?? TableHead !! TableData;
+        my $head-space = $.line-height - $.font-size;
+
+        for ^cols {
+            my $width = @widths[$_];
+            if @row[$_] -> $tb is rw {
+                if $tb.width > $width || $tb.height > $height {
+                    $tb .= clone: :$width, :$height;
+                }
+                $!ctx.tag: $cell-tag, {
+                    $tb.print: :$!ctx, :x($tab), :y($!ty);
+                    if $header {
+                        # draw underline
+                        my $y = $!ty - self!underline-position + $head-space;
+                        self!draw-line: $tab, $y, $tab + $width;
+                    }
+                }
+                given $tb.content-height {
+                    $row-height = $_ if $_ > $row-height;
+                }
+                if $tb.overflow -> $overflow {
+                    my $text = $overflow.join;
+                    @overflow[$_] = $tb.clone: :$text, :$width, :height(Inf);
+                }
+            }
+            $tab += $width + hpad;
+        }
+        if @overflow {
+            # continue table
+            self!style: :lines-before(3), {
+                self!table-row(@overflow, @widths, :$header);
+            }
+        }
+        else {
+            $!ty += $row-height + vpad;
+            $!ty += $head-space if $header;
+        }
+    }
+}
+
+method !table-cell($pod) {
+    my $text = pod2text($pod);
+    self!text-chunk: $text, :width(Inf), :height(Inf), :flow(0 + 0i);
+}
+
+method !build-table($pod, @table) {
+    my $x0 = self!indent;
+    my \total-width = $!width - $x0 - $!margin;
+    @table = ();
+
+    self!style: :bold, :lines-before(3), {
+        my @row = $pod.headers.map: { self!table-cell($_) }
+        @table.push: @row;
+    }
+
+    $pod.contents.map: {
+        my @row = .map: { self!table-cell($_) }
+        @table.push: @row;
+    }
+
+    my $cols = @table.max: *.Int;
+    my @widths = (^$cols).map: -> $col { @table.map({.[$col].?width // 0}).max };
+   fit-widths(total-width - hpad * (@widths-1), @widths);
+   @widths;
+}
+
+multi method pod2pdf(Pod::Block::Table $pod) {
+    my @widths = self!build-table: $pod, my @table;
+
+    self!style: :lines-before(3), :pad, {
+        $!ctx.tag: Table, {
+            if $pod.caption -> $caption {
+                self!style: :tag(Caption), :bold, {
+                    $.say: $caption;
+                }
+            }
+            self!pad-here;
+            my @header = @table.shift.List;
+            if @header {
+                $!ctx.tag: TableHead, {
+                    self!table-row: @header, @widths, :header;
+                }
+            }
+
+            if @table {
+                 $!ctx.tag: TableBody, {
+                     for @table {
+                         my @row = .List;
+                         if @row {
+                             $!ctx.tag: TableRow, {
+                                 self!table-row: @row, @widths;
+                             }
+                         }
+                     }
+                }
+            }
+        }
+    }
 }
 
 method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
@@ -185,6 +327,7 @@ method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
     self!style: :tag('H' ~ $level), :$font-size, :$bold, :$italic, :$underline, :$lines-before, {
 
         my Str:D $name = dest-name($Title);
+        self!pad-here;
         self!ctx.destination: :$name, {
             $.say($Title);
         }

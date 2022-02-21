@@ -11,9 +11,10 @@ use Cairo;
 
 subset TextDirection of Str where 'ltr'|'rtl';
 
-has Numeric $.width;
-has Numeric $.height;
+has Numeric $.width = Inf;
+has Numeric $.height = Inf;
 has Complex $.flow = 0 + 0i;
+has Complex $.start = $!flow;
 has HarfBuzz::Font::Cairo:D $.font is required;
 has TextDirection $.direction = 'ltr';
 has Str $.text is required;
@@ -21,19 +22,26 @@ has @.overflow is rw is built;
 has Pod::To::Cairo::Style $.style is rw handles <font-size leading space-width shape>;
 has Bool $.verbatim;
 has Cairo::Glyphs $!glyphs;
+has Numeric:D $.x = 0;
+has Numeric:D $.y = 0;
 
-class Line {
+class Line is rw {
     has $.x;
     has $.y;
-    has $.x1 is rw = $!x;
+    has $.x1 = $!x;
     method width { $!x1 - $!x }
 }
 has Line @.lines is built;
 
-submethod TWEAK(:$x!, :$y!) {
-##    $!text ~= ' ' if $!flow.re > 0;
-##    my $max-lines = ($!height / self.leading).Int;
-    $!glyphs = self!layout: :$x, :$y;
+submethod TWEAK {
+    self.layout;
+}
+
+method clone {
+    given callsame() {
+        .layout();
+        $_;
+    }
 }
 
 method !shaper {
@@ -48,16 +56,15 @@ method !shaper {
     }
 }
 
-#| Return a set of Cairo compatible shaped glyphs
-method !layout(
+#| layout Cairo compatible shaped glyphs
+method layout(
     HarfBuzz::Shaper:D :$shaper = self!shaper,
-    Numeric :x($x0) = 0e0, Numeric :y($y0) = 0e0,
     |c --> Cairo::Glyphs) {
     my int @nls = $!text.indices: "\n";
-    my Cairo::Glyphs $layout .= new: :elems($shaper.buf.length - +@nls);
+    $!glyphs .= new: :elems($shaper.buf.length - +@nls);
     my Cairo::cairo_glyph_t $cairo-glyph;
-    my Num $x = $x0.Num + $!flow.re;
-    my Num $y = $y0.Num + $!flow.im;
+    my Num $x = $!x.Num + $!start.re;
+    my Num $y = $!y.Num + $!start.im;
     my uint $nl = 0;
     @!lines = Line.new: :$x, :$y;
     my int $n = $shaper.elems;
@@ -67,19 +74,18 @@ method !layout(
     my \space = $!font.ft-face.glyph-index: ' ';
     my int $wb-i;
     my int $wb-j;
-    my $glyph;
     my Bool $first-word = ! $!flow.re;
     my Bool $word-wrap;
 
     loop (my int $i = 0; $i < $n; $i++) {
-        $glyph = $shaper[$i];
+        my $glyph = $shaper[$i];
         if $glyph.cluster == $next-nl {
             $next-nl = @nls.shift;
             $nl++;
         }
         else {
             if $glyph.gid == space {
-                if ($x - $x0) > $!width {
+                if ($x - $!x) > $!width {
                     $word-wrap = True;
                 }
                 else {
@@ -106,14 +112,14 @@ method !layout(
             while $nl {
                 $first-word = True;
                 @!lines.tail.x1 = $x;
-                $x = $x0.Num;
+                $x = $!x.Num;
                 $y += $.leading * $.font-size;
                 $nl-- if $nl;
                 @!lines.push: Line.new: :$x, :$y;
                 $wb-i = 0;
             }
 
-            $cairo-glyph = $layout[$j++];
+            $cairo-glyph = $!glyphs[$j++];
             $cairo-glyph.index = $glyph.gid;
             $cairo-glyph.x = $x + $glyph.x-offset;
             $cairo-glyph.y = $y + $glyph.y-offset;
@@ -121,18 +127,36 @@ method !layout(
         }
     }
 
-    $layout.x-advance = $.width;
-    $layout.y-advance = $y - $y0;
+    $!glyphs.x-advance = $.width;
+    $!glyphs.y-advance = $y - $!y;
 
     @!lines.tail.x1 = $x;
-    $!flow = ($x - $x0) + ($y - $y0)i;
-    $layout;
+    $!flow = ($x - $!x) + ($y - $!y)i;
+    $!glyphs;
 }
 
 method content-height { $!flow.im + $.font-size }
 
-method print(:$ctx!) {
-    my $elems = $!glyphs.elems;
+method !translate($dx, $dy) {
+    for 0 ..^ $!glyphs.elems {
+        given $!glyphs[$_] {
+            .x += $dx;
+            .y += $dy;
+        }
+    }
+    for @!lines {
+        .x  += $dx;
+        .x1 += $dx;
+        .y  += $dy
+    }
+    $!x += $dx;
+    $!y += $dy;
+}
+
+method print(:$ctx!, :$x = $!x, :$y = $!y) {
+    self!translate($x - $!x, $y - $!y)
+        unless $x =~= $!x && $y =~= $!y;
+
     $ctx.set_font_size: $.font-size;
     $ctx.show_glyphs($!glyphs);
 }
