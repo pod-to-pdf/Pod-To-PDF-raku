@@ -12,16 +12,16 @@ lives-ok {$pdf.finish}
 
 my $xml = q{<Document>
   <P>
-    This text is of minor significance.
+    This text is of minor signiﬁcance.
   </P>
   <P>
-    This text is of <Span FontWeight="italic">major significance</Span>.
+    This text is of major signiﬁcance.
   </P>
   <P>
-    This text is of <Span FontStyle="bold">fundamental significance</Span>.
+    This text is of fundamental signiﬁcance.
   </P>
   <P>
-    This text is verbatim &lt;with&gt; B&lt;disarmed&gt; Z&lt;formatting&gt;.
+    This text is verbatim C&lt;with&gt; B&lt;disarmed&gt; Z&lt;formatting&gt;.
   </P>
   <P>
     This text is to be replaced.
@@ -36,7 +36,10 @@ my $xml = q{<Document>
     This text contains a link with label to <Link href="http://www.google.com/">google</Link>.
   </P>
   <P>
-    A tap on an <Code>on demand</Code> supply will initiate the production of values, and tapping the supply again may result in a new set of values. For example, <Code>Supply.interval</Code> produces a fresh timer with the appropriate interval each time it is tapped. If the tap is closed, the timer simply stops emitting values to that tap.
+    A tap on an <Code>on demand</Code> supply will initiate the production of values, and tapping the supply
+again may result in a new set of values. For example, <Code>Supply.interval</Code> produces a fresh timer
+with the appropriate interval each time it is tapped. If the tap is closed, the timer simply
+stops emitting values to that tap.
   </P>
 </Document>
 };
@@ -54,7 +57,7 @@ subtest 'document structure', {
     require ::('PDF::Class');
     my $pdf  = ::('PDF::Class').open: "t/formatted.pdf";
     my $tags = ::('PDF::Tags::Reader').read: :$pdf;
-    is $tags[0].Str, $xml, 'PDF Structure is correct';
+    is $tags[0].Str(:omit<Span>), $xml, 'PDF Structure is correct';
 }
 
 =begin pod

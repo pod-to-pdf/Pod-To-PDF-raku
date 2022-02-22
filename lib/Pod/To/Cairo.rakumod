@@ -18,22 +18,26 @@ has $!gutter = Gutter;
 has $!tx = $!margin; # text-flow x
 has $!ty = $!margin; # text-flow y
 has UInt $!pad = 0;
-has UInt $!page-num = 0;
+has UInt $!page-num = 1;
 has HarfBuzz::Font::Cairo %!fonts;
 has HarfBuzz::Font::Cairo $!cur-font;
 has Str $!cur-font-patt = '';
 has Bool $.contents = True;
 has int32 @outline-stack;
+has @!footnotes;
 
-enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Paragraph<P>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
+enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Paragraph<P>, :Span<Span>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
 has Cairo::Surface:D $.surface is required;
 has Cairo::Context $.ctx .= new: $!surface;
 has Pod::To::Cairo::Style $.style handles<font font-size leading line-height bold italic mono underline lines-before link> .= new: :$!ctx;
 
+method render(|) {...}
+
 method read($pod) {
     $!ctx.tag: Document, {
         self.pod2pdf($pod);
+        self!finish-page;
     }
 }
 
@@ -146,9 +150,40 @@ method print($text is copy, Bool :$nl) {
     my \h = $chunk.content-height;
     (w, h,'');
 }
+
+
+method !finish-page {
+    if @!footnotes {
+        temp $!style .= new: :lines-before(0); # avoid current styling
+        $!tx = $!margin;
+        $!ty = $!height - 2*$!margin - $!gutter;
+        $!gutter = 0;
+
+        self!draw-line($!margin, $!ty, $!width - 2*$!margin, $!ty);
+
+        while @!footnotes {
+            $.pad(1);
+            my $footnote = @!footnotes.shift;
+            self!style: :tag(Note), {
+                my $y = $footnote.shift;
+                my $ind = $footnote.shift;
+                self!style: :tag(Label), {
+                    $!ctx.link: :page($!page-num), :pos[$!margin, $y], {
+                        $.print($ind); #[n]
+                    }
+                }
+                $!tx += 5;
+                $.pod2pdf($footnote);
+            }
+        }
+    }
+}
+
 method !new-page {
-    $!page-num++;
+    self!finish-page();
+    $!gutter = Gutter;
     $!surface.show_page unless $!page-num == 1;
+    $!page-num++;
     $!tx  = self!indent;
     $!ty  = $!margin;
 }
@@ -492,7 +527,14 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             }
         }
         when 'N' {
-            warn "todo Footnotes";
+            my @pos = $!margin, $!height - 2*$!margin - $!gutter;
+            $!ctx.link: :page($!page-num), :@pos, {
+                my $ind = '[' ~ @!footnotes+1 ~ ']';
+                self!style: :tag(Label), {  $.pod2pdf($ind); }
+                my @contents = $!ty - $.line-height, $ind, $pod.contents.Slip;
+                @!footnotes.push: @contents;
+                $!gutter += self!text-chunk(pod2text(@contents)).lines;
+            }
         }
         when 'U' {
             self!style: :underline, {
@@ -522,11 +564,13 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
 }
 
 multi method pod2pdf(Str $pod) {
-    $.print($pod);
+    self!style: :tag(Span), {
+        $.print($pod);
+    }
 }
 
-multi method pod2pdf(List:D $_) {
-    $.pod2pdf($_) for .List;
+multi method pod2pdf(List:D $pod) {
+    $.pod2pdf($_) for $pod.List;
 }
 
 multi method pod2pdf($pod) {
