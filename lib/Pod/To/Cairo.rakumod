@@ -23,7 +23,6 @@ has HarfBuzz::Font::Cairo %!fonts;
 has HarfBuzz::Font::Cairo $!cur-font;
 has Str $!cur-font-patt = '';
 has Bool $.contents = True;
-has int32 @outline-stack;
 has @!footnotes;
 
 enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Paragraph<P>, :Span<Span>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
@@ -32,7 +31,6 @@ has Cairo::Surface:D $.surface is required;
 has Cairo::Context $.ctx .= new: $!surface;
 has Pod::To::Cairo::Style $.style handles<font font-size leading line-height bold italic mono underline lines-before link> .= new: :$!ctx;
 
-method render(|) {...}
 
 method read($pod) {
     $!ctx.tag: Document, {
@@ -45,7 +43,10 @@ submethod TWEAK(:$pod) {
     self.read($_) with $pod;
 }
 
-method title { warn "ignoring title"; }
+method render(|) {...}
+method title { }
+method add-toc-entry(Str:D $Title, Str :$dest!, Level :$level! ) { }
+
 
 multi method pad(&codez) { $.pad; &codez(); $.pad}
 multi method pad($!pad = 2) {}
@@ -148,7 +149,7 @@ method print($text is copy, Bool :$nl) {
     }
     my \w = $chunk.lines > 1 ?? $chunk.width !! $chunk.flow.re;
     my \h = $chunk.content-height;
-    (w, h,'');
+    (w, h, $chunk.overflow);
 }
 
 
@@ -266,8 +267,7 @@ method !table-row(@row, @widths, Bool :$header) {
                     given $tb.content-height {
                         $row-height = $_ if $_ > $row-height;
                     }
-                    if $tb.overflow -> $overflow {
-                        my $text = $overflow.join;
+                    if $tb.overflow -> $text {
                         @overflow[$_] = $tb.clone: :$text, :$width, :height(Inf);
                     }
                 }
@@ -367,22 +367,8 @@ method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
             $.say($Title);
         }
 
-        self!add-toc-entry: $Title, :dest($name), :$level;
+        self.add-toc-entry: $Title, :dest($name), :$level;
     }
-}
-
-method !add-toc-entry(Str:D $Title, Str :$dest!, Level :$level! ) {
-    my Str $name = $Title.subst(/\s+/, ' ', :g); # Tidy a little
-    @!outline-stack.pop while @!outline-stack >= $level;
-    my int32 $parent-id = $_ with @!outline-stack.tail;
-    while @!outline-stack < $level-1 {
-        # e.g. jump from =head1 to =head3
-        # need to insert missing entries
-        $parent-id = $!surface.add_outline: :$parent-id, :$dest;
-        @!outline-stack.push: $parent-id;
-    }
-    my uint32 $toc-id = $!surface.add_outline: :$parent-id, :$name, :$dest;
-    @!outline-stack.push: $toc-id;
 }
 
 method !code(Str $code is copy, :$inline) {

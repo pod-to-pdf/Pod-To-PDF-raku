@@ -18,7 +18,7 @@ has Complex $.start = $!flow;
 has HarfBuzz::Font::Cairo:D $.font is required;
 has TextDirection $.direction = 'ltr';
 has Str $.text is required;
-has @.overflow is rw is built;
+has Str $.overflow is built;
 has Pod::To::Cairo::Style $.style is rw handles <font-size leading space-width shape>;
 has Bool $.verbatim;
 has Cairo::Glyphs $!glyphs;
@@ -78,6 +78,7 @@ method layout(
     my Bool $first-word = ! $!flow.re;
     my Bool $word-wrap;
 
+    layup:
     loop (my int $i = 0; $i < $n; $i++) {
         my $glyph = $shaper[$i];
         if $glyph.cluster == $next-nl {
@@ -96,11 +97,13 @@ method layout(
                 $first-word = False;
             }
             elsif $i == $n - 1 && $x > $!width && !$first-word {
+                # check line length after the last word. Don't ever wrap
+                # if it's the only word on the line
                 $word-wrap = True;
             }
 
             if $word-wrap {
-                # word exceeds line length. backup this word and
+                # word exceeds line length. back-out this word and
                 # restart on next line
                 $nl ||= 1;
                 $i = $wb-i;
@@ -111,10 +114,15 @@ method layout(
             }
 
             while $nl {
-                $first-word = True;
                 @!lines.tail.x1 = $x;
+                my $dy = $.leading * $.font-size;
+                if $y + $dy - $!y > $!height {
+                    $!overflow = $!text.substr($glyph.cluster);
+                    last layup;
+                }
+                $first-word = True;
                 $x = $!x.Num;
-                $y += $.leading * $.font-size;
+                $y += $dy;
                 $nl-- if $nl;
                 @!lines.push: Line.new: :$x, :$y;
                 $wb-i = 0;

@@ -6,6 +6,21 @@ use Cairo;
 use File::Temp;
 
 has Str $!title;
+has int32 @!outline-stack;
+
+method add-toc-entry(Str:D $Title, Str :$dest!, UInt:D :$level! ) {
+    my Str $name = $Title.subst(/\s+/, ' ', :g); # Tidy a little
+    @!outline-stack.pop while @!outline-stack >= $level;
+    my int32 $parent-id = $_ with @!outline-stack.tail;
+    while @!outline-stack < $level-1 {
+        # e.g. jump from =head1 to =head3
+        # need to insert missing entries
+        $parent-id = $.surface.add_outline: :$parent-id, :$dest;
+        @!outline-stack.push: $parent-id;
+    }
+    my uint32 $toc-id = $.surface.add_outline: :$parent-id, :$name, :$dest;
+    @!outline-stack.push: $toc-id;
+}
 
 method title is rw {
     Proxy.new(
