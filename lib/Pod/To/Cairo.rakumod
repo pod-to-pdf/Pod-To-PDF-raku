@@ -25,7 +25,7 @@ has Str $!cur-font-patt = '';
 has Bool $.contents = True;
 has @!footnotes;
 
-enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Paragraph<P>, :Span<Span>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
+enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Paragraph<P>, :Span<Span>, :Section<Section>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
 has Cairo::Surface:D $.surface is required;
 has Cairo::Context $.ctx .= new: $!surface;
@@ -547,6 +547,100 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             $.pod2pdf($pod.contents);
         }
     }
+}
+
+multi method pod2pdf(Pod::Block::Declarator $pod) {
+    my $w := $pod.WHEREFORE;
+    my Level $level = 3;
+    my ($type, $code, $name, $decl) = do given $w {
+        when Method {
+            my @params = .signature.params.skip(1);
+            @params.pop if @params.tail.name eq '%_';
+            (
+                (.multi ?? 'multi ' !! '') ~ 'method',
+                .name ~ signature2text(@params, .returns),
+            )
+        }
+        when Sub {
+            (
+                (.multi ?? 'multi ' !! '') ~ 'sub',
+                .name ~ signature2text(.signature.params, .returns)
+            )
+        }
+        when Attribute {
+            my $gist = .gist;
+            my $name = .name.subst('$!', '');
+            $gist .= subst('!', '.')
+                if .has_accessor;
+
+            ('attribute', $gist, $name, 'has');
+        }
+        when .HOW ~~ Metamodel::EnumHOW {
+            ('enum', .raku() ~ signature2text($_.enums.pairs));
+        }
+        when .HOW ~~ Metamodel::ClassHOW {
+            $level = 2;
+            ('class', .raku, .^name);
+        }
+        when .HOW ~~ Metamodel::ModuleHOW {
+            $level = 2;
+            ('module', .raku, .^name);
+        }
+        when .HOW ~~ Metamodel::SubsetHOW {
+            ('subset', .raku ~ ' of ' ~ .^refinee().raku);
+        }
+        when .HOW ~~ Metamodel::PackageHOW {
+            ('package', .raku)
+        }
+        default {
+            '', ''
+        }
+    }
+
+    $name //= $w.?name // '';
+    $decl //= $type;
+
+    self!style: :lines-before(3), :pad, {
+        self!heading($type.tclc ~ ' ' ~ $name, :$level);
+
+        if $pod.leading -> $leading {
+            self!style: :pad, :tag(Paragraph), {
+                $.pod2pdf($leading);
+            }
+        }
+
+        if $code {
+            $.pad: { self!code($decl ~ ' ' ~ $code) };
+        }
+
+        if $pod.trailing -> $trailing {
+            $.pad;
+            self!style: :pad, :tag(Paragraph), {
+                $.pod2pdf($trailing);
+            }
+        }
+    }
+}
+
+multi method pod2pdf(Pod::Block::Comment) {
+    # ignore comments
+}
+
+sub signature2text($params, Mu $returns?) {
+    my constant NL = "\n    ";
+    my $result = '(';
+
+    if $params.elems {
+        $result ~= NL ~ $params.map(&param2text).join(NL) ~ "\n";
+    }
+    $result ~= ')';
+    unless $returns<> =:= Mu {
+        $result ~= " returns " ~ $returns.raku
+    }
+    $result;
+}
+sub param2text($p) {
+    $p.raku ~ ',' ~ ( $p.WHY ?? ' # ' ~ $p.WHY !! '')
 }
 
 multi method pod2pdf(Str $pod) {
