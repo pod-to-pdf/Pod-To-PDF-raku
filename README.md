@@ -1,4 +1,4 @@
-Pod-To-Cairo-raku
+Pod-To-PDF-raku
 -----------------
 
-Pod PDF, PNG and SVG backends, rendered via Cairo.
+Pod PDF rendering via Cairo.

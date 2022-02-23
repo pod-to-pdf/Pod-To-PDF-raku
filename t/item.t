@@ -1,7 +1,7 @@
 use v6;
 
 use Test;
-use Pod::To::Cairo::PDF;
+use Pod::To::PDF;
 use Cairo;
 
 plan 2;
