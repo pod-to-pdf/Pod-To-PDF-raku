@@ -76,7 +76,6 @@ method layout(
     my int $wb-i;
     my int $wb-j;
     my Bool $first-word = ! $!flow.re;
-    my Bool $word-wrap;
 
     layup:
     loop (my int $i = 0; $i < $n; $i++) {
@@ -87,22 +86,11 @@ method layout(
         }
         else {
             if $glyph.gid == space {
-                if ($x - $!x) > $!width {
-                    $word-wrap = True;
-                }
-                else {
-                    $wb-i = $i + 1;
-                    $wb-j = $j;
-                }
                 $first-word = False;
+                $wb-i = $i + 1;
+                $wb-j = $j;
             }
-            elsif $i == $n - 1 && $x > $!width && !$first-word {
-                # check line length after the last word. Don't ever wrap
-                # if it's the only word on the line
-                $word-wrap = True;
-            }
-
-            if $word-wrap {
+            elsif ($x - $!x) > $!width && !$first-word {
                 # word exceeds line length. back-out this word and
                 # restart on next line
                 $nl ||= 1;
@@ -110,7 +98,6 @@ method layout(
                 $j = $wb-j;
                 $wb-i = $i + 1;
                 $glyph = $shaper[$i];
-                $word-wrap = False;
             }
 
             while $nl {
