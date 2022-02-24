@@ -8,6 +8,40 @@ use File::Temp;
 has Str $!title;
 has int32 @!outline-stack;
 
+submethod TWEAK(Str :$title, Str :$lang = 'en') {
+    self.title = $_ with $title;
+    self.surface.set_metadata(CAIRO_PDF_METADATA_CREATOR, "Raku {self.^name} v{self.^ver}");
+}
+
+method render(
+    $class: $pod,
+    :$file = tempfile("POD6-****.pdf", :!unlink)[0],
+    UInt:D :$width  = 512,
+    UInt:D :$height = 720,
+    |c,
+) {
+    state %cache{Any};
+    %cache{$pod}{$width~'x'~$height} //= do {
+        my Cairo::Surface::PDF $surface .= create($file, $width, $height);
+        $class.new(:$pod, :$surface, :$width, :$height, |c);
+        $surface.finish;
+        $file;
+    }
+}
+
+our sub pod2pdf(
+    $pod,
+    :$class = $?CLASS,
+    Str :$file = tempfile("POD6-****.pdf", :!unlink)[0],
+    UInt:D :$width  = 512,
+    UInt:D :$height = 720,
+    Cairo::Surface::PDF :$surface = Cairo::Surface::PDF.create($file, $width, $height);
+    |c,
+) is export {
+    $class.new(|c, :$pod, :$surface);
+    $surface;
+}
+
 method add-toc-entry(Str:D $Title, Str :$dest!, UInt:D :$level! ) {
     my Str $name = $Title.subst(/\s+/, ' ', :g); # Tidy a little
     @!outline-stack.pop while @!outline-stack >= $level;
@@ -31,24 +65,3 @@ method title is rw {
     )
 }
 
-submethod TWEAK(Str :$title, Str :$lang = 'en') {
-    self.title = $_ with $title;
-    self.surface.set_metadata(CAIRO_PDF_METADATA_CREATOR, "Raku {self.^name} v{self.^ver}");
-}
-
-method render($class: $pod, :$file = tempfile("POD6-****.pdf", :!unlink)[0], |c) {
-    my Cairo::Surface::PDF $surface .= create($file, 512, 720);
-    $class.new(|c, :$pod, :$surface);
-    $surface.finish;
-    $file;
-}
-
-our sub pod2pdf(
-    $pod,
-    :$class = $?CLASS,
-    Str :$file = tempfile("POD6-****.pdf", :!unlink)[0],
-    Cairo::Surface::PDF :$surface = Cairo::Surface::PDF.create($file, 512, 720),
-    |c) is export {
-    $class.new(|c, :$pod, :$surface);
-    $surface;
-}
