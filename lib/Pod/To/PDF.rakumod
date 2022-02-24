@@ -32,7 +32,7 @@ method render(
 our sub pod2pdf(
     $pod,
     :$class = $?CLASS,
-    Str :$file = tempfile("POD6-****.pdf", :!unlink)[0],
+    Str() :$file = tempfile("POD6-****.pdf", :!unlink)[0],
     UInt:D :$width  = 512,
     UInt:D :$height = 720,
     Cairo::Surface::PDF :$surface = Cairo::Surface::PDF.create($file, $width, $height);
@@ -65,3 +65,98 @@ method title is rw {
     )
 }
 
+=begin pod
+=TITLE
+
+Pod::To::PDF - Pod to PDF renderer
+
+=head2 Description
+
+Renders Pod to PDF documents via Cairo.
+
+=head2 Usage
+
+From command line:
+
+    $ raku --doc=PDF lib/to/class.rakumod | xargs evince
+
+From Raku:
+    =begin code :lang<raku>
+    use Pod::To::PDF;
+    use Cairo;
+
+    =NAME
+    foobar.pl
+
+    =head2 SYNOPSIS
+    =code foobar.pl <options> files ...
+
+    my Cairo::Surface::PDF $pdf = pod2pdf($=pod);
+    $pdf.finish();
+    =end code
+
+=head2 Exports
+
+    class Pod::To::PDF;
+    sub pod2pdf; # See below
+
+From command line:
+    =begin code :lang<shell>
+    $ raku --doc=PDF lib/to/class.rakumod | xargs xpdf
+    =end code
+From Raku code, the C<pod2pdf> function returns a L< Cairo::Surface::PDF> object which can
+be further manipulated, or finished to complete rendering.
+
+    =begin code :lang<raku>
+    use Pod::To::PDF;
+    use Cairo;
+ 
+    =NAME
+    foobar.raku
+
+    =SYNOPSIS
+        foobarraku <options> files ...
+
+    my Cairo::Surface::PDF $pdf = pod2pdf($=pod);
+    $pdf.finish();
+    =end code
+
+=head2 pod2pdf() Options
+
+=defn Str() :$file
+A filename for the output PDF file.
+
+=defn Cairo::Surface::PDF :$surface
+A surface to render to
+
+=defn UInt:D :$width, UInt:D :$height
+The page size in points (there are 72 points per inch).
+
+=defn UInt:D :$margin
+The page margin in points
+
+=defn Hash @fonts
+By default, Pod::To::PDF loads system fonts via L<FontConfig>. This option can be used to preload selected fonts.
+=begin code :lang<raku>
+use Pod::To::PDF;
+use Cairo;
+my @fonts = (
+    %(:file<fonts/Raku.otf>),
+    %(:file<fonts/Raku-Bold.otf>, :bold),
+    %(:file<fonts/Raku-Italic.otf>, :italic),
+    %(:file<fonts/Raku-BoldItalic.otf>, :bold, :italic),
+    %(:file<fonts/Raku-Mono.otf>, :mono),
+);
+
+my Cairo::Surface::PDF $pdf = pod2pdf($=pod, :@fonts, :file<out.pdf>);
+$pdf.finish();
+=end code
+Each font entry should have a `file` entry and various
+combinations of `bold`, `italic` and `mono` flags. Note
+that `mono` is used to render code blocks. 
+
+
+=defn `:!contents`
+Disables Table of Contents generation.
+
+=end pod

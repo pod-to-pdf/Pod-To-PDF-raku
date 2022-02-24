@@ -6,12 +6,12 @@
   "build-depends": [
   ],
   "depends": [
-      "Cairo:ver<0.3.0+>",
-      "File::Temp",
-      "FontConfig",
-      "HarfBuzz:ver<0.0.11+>",
-      "HarfBuzz::Font::Cairo",
-      "Text::FriBidi"
+    "Cairo:ver<0.3.0+>",
+    "File::Temp",
+    "FontConfig",
+    "HarfBuzz:ver<0.0.11+>",
+    "HarfBuzz::Font::Cairo",
+    "Text::FriBidi"
   ],
   "description": "Pod rendering via Cairo to PDF",
   "license": "Artistic-2.0",
@@ -19,8 +19,8 @@
   "perl": "6.d",
   "provides": {
     "Pod::To::Cairo": "lib/Pod/To/Cairo.rakumod",
-    "Pod::To::Cairo::TextChunk": "lib/Pod/To/Cairo/TextChunk.rakumod",
     "Pod::To::Cairo::Style": "lib/Pod/To/Cairo/Style.rakumod",
+    "Pod::To::Cairo::TextChunk": "lib/Pod/To/Cairo/TextChunk.rakumod",
     "Pod::To::PDF": "lib/Pod/To/PDF.rakumod"
   },
   "raku": "6.*",

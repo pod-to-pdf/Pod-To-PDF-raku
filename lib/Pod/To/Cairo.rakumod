@@ -22,8 +22,9 @@ has UInt $!page-num = 1;
 has HarfBuzz::Font::Cairo %!fonts;
 has HarfBuzz::Font::Cairo $!cur-font;
 has Str $!cur-font-patt = '';
-has Bool $.contents = True;
 has @!footnotes;
+has Bool $.contents = True;
+has Bool $.verbose;
 
 enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Paragraph<P>, :Span<Span>, :Section<Section>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
@@ -39,7 +40,15 @@ method read($pod) {
     }
 }
 
-submethod TWEAK(:$pod) {
+submethod TWEAK(:$pod, :@fonts) {
+    for @fonts -> % ( Str :$file!, Bool :$bold, Bool :$italic, Bool :$mono ) {
+        # font preload
+        temp $!style .= new: :$bold, :$italic, :$mono;
+        my Str() $key = $!style.pattern;
+        die "no such font file: $file"
+            unless $file.IO.e;
+        %!fonts{$key} = HarfBuzz::Font::Cairo.new: :$file;
+    }
     self.read($_) with $pod;
 }
 
@@ -64,6 +73,7 @@ method !curr-font {
         unless $key eq $!cur-font-patt {
             $!cur-font = %!fonts{$key} //= do {
                 my Str:D $file = $patt.match.file;
+                note "loading $file" if $!verbose;
                 HarfBuzz::Font::Cairo.new: :$file;
             }
             $!cur-font-patt = $key;
@@ -183,10 +193,12 @@ method !finish-page {
 method !new-page {
     self!finish-page();
     $!gutter = Gutter;
-    $!surface.show_page unless $!page-num == 1;
+     unless $!page-num == 1 && $!ty == $!margin {
+         $!surface.show_page;
+         $!tx  = self!indent;
+         $!ty  = $!margin;
+     }
     $!page-num++;
-    $!tx  = self!indent;
-    $!ty  = $!margin;
 }
 
 method !ctx {
@@ -426,9 +438,11 @@ multi method pod2pdf(Pod::Block::Named $pod) {
                             self!heading: $title, :level(1);
                         }
                     }
-                    when 'SUBTITLE' {
+                    when 'SUBTITLE'|'NAME'|'AUTHOR'|'VERSION' {
+                        my $title = $_;
                         $.pad: {
-                            self!heading: pod2text($pod.contents), :level(2);
+                            self!heading: $title, :level(2);
+                            $.pod2pdf($pod.contents);
                         }
                     }
                     default {
@@ -547,6 +561,15 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             $.pod2pdf($pod.contents);
         }
     }
+}
+
+multi method pod2pdf(Pod::Defn $pod) {
+    $.pad;
+    self!style: :bold, {
+        $.pod2pdf($pod.term);
+    }
+    $!ty -= $.line-height; # cuddle paragraph
+    $.pod2pdf($pod.contents);
 }
 
 multi method pod2pdf(Pod::Block::Declarator $pod) {
