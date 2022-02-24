@@ -6,7 +6,7 @@ use Cairo;
 
 plan 2;
 
-my $file = "t/paragraph.pdf";
+my $file = "tmp/paragraph.pdf";
 my Cairo::Surface $pdf = pod2pdf($=pod, :$file);
 lives-ok {$pdf.finish}
 
@@ -67,7 +67,7 @@ subtest 'document structure', {
     plan 1;
     # PDF::Class is an indirect dependency of PDF::Tags::Reader
     require ::('PDF::Class');
-    my $pdf  = ::('PDF::Class').open: "t/paragraph.pdf";
+    my $pdf  = ::('PDF::Class').open: "tmp/paragraph.pdf";
     my $tags = ::('PDF::Tags::Reader').read: :$pdf;
     is $tags[0].Str(:omit<Span>), $xml, 'PDF Structure is correct';
 }
