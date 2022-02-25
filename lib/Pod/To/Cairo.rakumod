@@ -363,6 +363,17 @@ multi method pod2pdf(Pod::Block::Table $pod) {
     }
 }
 
+has UInt %!dests-taken;
+method !make-dest-name($title, $seq = '') {
+    my $name = dest-name($title ~ $seq);
+    if %!dests-taken{$name}++ {
+        self!make-dest-name($title, ($seq||0) + 1);
+    }
+    else {
+        $name;
+    }
+}
+
 method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
     my constant HeadingSizes = 20, 16, 13, 11.5, 10, 10;
     my $font-size = HeadingSizes[$level - 1];
@@ -379,7 +390,7 @@ method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
 
     self!style: :tag('H' ~ $level), :$font-size, :$bold, :$italic, :$underline, :$lines-before, {
 
-        my Str:D $name = dest-name($Title);
+        my Str:D $name = self!make-dest-name($Title);
         self!pad-here;
         self!ctx.destination: :$name, {
             $.say($Title);
