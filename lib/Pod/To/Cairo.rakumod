@@ -6,6 +6,7 @@ use HarfBuzz::Font::Cairo;
 use Cairo;
 use FontConfig;
 use Pod::To::Text;
+use IETF::RFC_Grammar::URI;
 
 subset Level of Int:D where 1..6;
 my constant Gutter = 3;
@@ -114,19 +115,13 @@ multi method say($text) {
     self.print($text, :nl);
 }
 
-sub uri_sanitise($s) {
-    # ensure URI only contains legal characters and encodings
-    # as defined in RFC3986
-    $s.subst(/<-[0..9A..Za..z\-.~_:/?#\[\]@!$&'()*+,;=%]>|'%'<!before <xdigit>>/, {$/.encode.list.map(*.fmt('%%%02X'))}, :g);
-}
-
 method !link_begin($chunk, :$x!, :$y!) {
     if $.link.starts-with('#') {
         my $dest = $.link.substr(1);
         self!ctx.link_begin: :$dest;
     }
     else {
-        my $uri = uri_sanitise $.link;
+        my $uri = $.link;
         my $width = $chunk.lines > 1 ?? $chunk.width !! $chunk.flow.re - $!tx + $x;
         my $height = $chunk.content-height;
         my @rect = [$!tx, $!ty - $.font-size, $width, $height];
@@ -568,7 +563,13 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
         when 'L' {
             my $text = pod2text($pod.contents);
             given $pod.meta.head // $text -> $link {
-                self!style: :$link, {
+                with IETF::RFC_Grammar::URI.parse($link) {
+                    self!style: :$link, {
+                        $.print: $text;
+                    }
+                }
+                else {
+                    warn "ignoring invalid link: $link";
                     $.print: $text;
                 }
             }

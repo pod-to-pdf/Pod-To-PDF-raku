@@ -11,6 +11,7 @@
     "FontConfig",
     "HarfBuzz:ver<0.0.11+>",
     "HarfBuzz::Font::Cairo",
+    "IETF::RFC_Grammar::URI",
     "Text::FriBidi"
   ],
   "description": "Pod rendering via Cairo to PDF",
