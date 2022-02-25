@@ -34,27 +34,7 @@ Exports
     class Pod::To::PDF;
     sub pod2pdf; # See below
 
-From command line:
-
-```shell
-$ raku --doc=PDF lib/to/class.rakumod | xargs xpdf
-```
-
 From Raku code, the `pod2pdf` function returns a [Cairo::Surface::PDF](Cairo::Surface::PDF) object which can be further manipulated, or finished to complete rendering.
-
-```raku
-use Pod::To::PDF;
-use Cairo;
-
-=NAME
-foobar.raku
-
-=head2 SYNOPSIS
-=code foobarraku <options> files ...
-
-my Cairo::Surface::PDF $pdf = pod2pdf($=pod);
-$pdf.finish();
-```
 
 Description
 -----------
@@ -129,7 +109,7 @@ Please check these module's installation instructions.
 Testing
 -------
 
-Installation of the [PDF::Tags::Reader](PDF::Tags::Reader) module is recommended to enable structural testing.
+Installation of the [PDF::Tags::Reader](PDF::Tags::Reader) module is recommended to enables structural testing.
 
 For example, to test this module from source.
 

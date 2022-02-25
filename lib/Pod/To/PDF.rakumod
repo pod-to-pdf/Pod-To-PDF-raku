@@ -49,7 +49,8 @@ method add-toc-entry(Str:D $Title, Str :$dest!, UInt:D :$level! ) {
     while @!outline-stack < $level-1 {
         # e.g. jump from =head1 to =head3
         # need to insert missing entries
-        $parent-id = $.surface.add_outline: :$parent-id, :$dest;
+        my $flags = CAIRO_PDF_OUTLINE_FLAG_OPEN;
+        $parent-id = $.surface.add_outline: :$parent-id, :$dest, :$flags;
         @!outline-stack.push: $parent-id;
     }
     my uint32 $toc-id = $.surface.add_outline: :$parent-id, :$name, :$dest;
@@ -96,26 +97,8 @@ From Raku:
     class Pod::To::PDF;
     sub pod2pdf; # See below
 
-From command line:
-    =begin code :lang<shell>
-    $ raku --doc=PDF lib/to/class.rakumod | xargs xpdf
-    =end code
 From Raku code, the C<pod2pdf> function returns a L< Cairo::Surface::PDF> object which can
 be further manipulated, or finished to complete rendering.
-
-    =begin code :lang<raku>
-    use Pod::To::PDF;
-    use Cairo;
- 
-    =NAME
-    foobar.raku
-
-    =head2 SYNOPSIS
-    =code foobarraku <options> files ...
-
-    my Cairo::Surface::PDF $pdf = pod2pdf($=pod);
-    $pdf.finish();
-    =end code
 
 =head2 Description
 
@@ -180,8 +163,8 @@ Please check these module's installation instructions.
 
 =head2 Testing
 
-Installation of the L<PDF::Tags::Reader> module is recommended
-to enable structural testing.
+Installation of the L<PDF::Tags::Reader> module is recommended to
+enables structural testing.
 
 For example, to test this module from source.
 

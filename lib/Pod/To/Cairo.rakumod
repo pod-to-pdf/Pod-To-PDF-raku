@@ -114,13 +114,19 @@ multi method say($text) {
     self.print($text, :nl);
 }
 
+sub uri_sanitise($s) {
+    # ensure URI only contains legal characters and encodings
+    # as defined in RFC3986
+    $s.subst(/<-[0..9A..Za..z\-.~_:/?#\[\]@!$&'()*+,;=%]>|'%'<!before <xdigit>>/, {$/.encode.list.map(*.fmt('%%%02X'))}, :g);
+}
+
 method !link_begin($chunk, :$x!, :$y!) {
     if $.link.starts-with('#') {
         my $dest = $.link.substr(1);
         self!ctx.link_begin: :$dest;
     }
     else {
-        my $uri = $.link;
+        my $uri = uri_sanitise $.link;
         my $width = $chunk.lines > 1 ?? $chunk.width !! $chunk.flow.re - $!tx + $x;
         my $height = $chunk.content-height;
         my @rect = [$!tx, $!ty - $.font-size, $width, $height];
@@ -439,7 +445,7 @@ multi method pod2pdf(Pod::Block::Named $pod) {
                         }
                     }
                     when 'SUBTITLE'|'NAME'|'AUTHOR'|'VERSION' {
-                        my $title = $_;
+                        my $title = pod2text($pod.contents);
                         $.pad: {
                             self!heading: $title, :level(2);
                             $.pod2pdf($pod.contents);
@@ -568,7 +574,6 @@ multi method pod2pdf(Pod::Defn $pod) {
     self!style: :bold, {
         $.pod2pdf($pod.term);
     }
-    $!ty -= $.line-height; # cuddle paragraph
     $.pod2pdf($pod.contents);
 }
 

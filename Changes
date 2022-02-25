@@ -1,6 +1,8 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+    - Fix rendering of =SUBTITLE and other uppercased headers
+    - Sanitise external links to ensure that they're legal
 
 0.0.2  2022-02-25T13:17:10+13:00
     - Fix testing under zef install
