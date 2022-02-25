@@ -1,5 +1,5 @@
 use Pod::To::Cairo;
-unit class Pod::To::PDF:ver<0.0.1>
+unit class Pod::To::PDF:ver<0.0.2>
     is Pod::To::Cairo;
 
 use Cairo;
@@ -174,7 +174,7 @@ Disables Table of Contents generation.
 
 =head2 Installation
 
-This module's dependencies include L<HarfBuzz|https://harfbuzz-raku.github.io/HarfBuzz-raku/>, L<Font::FreeType|https://pdf-raku.github.io/Font-FreeType-raku/> and L<FontConfig|https://raku.land/zef:dwarring/FontConfig>, which further depend on native C<harfbuzz>, C<freetype6> and C<fontconfig> libraries.
+This module's dependencies include L<HarfBuzz|https://harfbuzz-raku.github.io/HarfBuzz-raku/>, L<Font::FreeType|https://pdf-raku.github.io/Font-FreeType-raku/>, L<FontConfig|https://raku.land/zef:dwarring/FontConfig> and L<Cairo|https://raku.land/github:timo/Cairo>, which further depend on native C<harfbuzz>, C<freetype6>, C<fontconfig> and C<cairo> libraries.
 
 Please check these module's installation instructions.
 

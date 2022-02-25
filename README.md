@@ -122,7 +122,7 @@ Disables Table of Contents generation.
 Installation
 ------------
 
-This module's dependencies include [HarfBuzz](https://harfbuzz-raku.github.io/HarfBuzz-raku/), [Font::FreeType](https://pdf-raku.github.io/Font-FreeType-raku/) and [FontConfig](https://raku.land/zef:dwarring/FontConfig), which further depend on native `harfbuzz`, `freetype6` and `fontconfig` libraries.
+This module's dependencies include [HarfBuzz](https://harfbuzz-raku.github.io/HarfBuzz-raku/), [Font::FreeType](https://pdf-raku.github.io/Font-FreeType-raku/), [FontConfig](https://raku.land/zef:dwarring/FontConfig) and [Cairo](https://raku.land/github:timo/Cairo), which further depend on native `harfbuzz`, `freetype6`, `fontconfig` and `cairo` libraries.
 
 Please check these module's installation instructions.
 

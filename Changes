@@ -2,5 +2,9 @@ Revision history for Pod-To-PDF
 
 {{$NEXT}}
 
+0.0.2  2022-02-25T13:17:10+13:00
+    - Fix testing under zef install
+    - Minor refactor of line-breaking
+
 0.0.1  2022-02-25T12:22:35+13:00
     - Initial version

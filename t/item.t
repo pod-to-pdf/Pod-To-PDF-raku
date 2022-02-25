@@ -6,8 +6,9 @@ use Cairo;
 
 plan 2;
 
-my $file = "tmp/item.pdf";
-my Cairo::Surface $pdf = pod2pdf($=pod, :$file);
+mkdir "tmp";
+my $pdf-file = "tmp/item.pdf";
+my Cairo::Surface $pdf = pod2pdf($=pod, :$pdf-file);
 lives-ok {$pdf.finish}
 
 my $xml = q{<Document>
