@@ -150,13 +150,13 @@ method print($text is copy, Bool :$nl) {
         $!ctx.link_end;
     }
 
+    $!ty += $chunk.lines * $.line-height;
     if $nl {
         $!tx = $!margin;
-        $!ty += $chunk.content-height;
     }
     else {
         $!tx = $x + $chunk.flow.re;
-        $!ty = $y + $chunk.flow.im;
+        $!ty -= $.line-height;
     }
     my \w = $chunk.lines > 1 ?? $chunk.width !! $chunk.flow.re;
     my \h = $chunk.content-height;
