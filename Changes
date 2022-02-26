@@ -2,6 +2,10 @@ Revision history for Pod-To-PDF
 
 {{$NEXT}}
 
+0.0.4  2022-02-27T06:13:12+13:00
+    - Fix internal links
+    - Warn, don't abort if :@fonts file is missing
+
 0.0.3  2022-02-26T15:39:14+13:00
     - Fix rendering of =SUBTITLE and other uppercased headers
     - Parse external links to ensure that they're legal

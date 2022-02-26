@@ -44,11 +44,14 @@ method read($pod) {
 submethod TWEAK(:$pod, :@fonts) {
     for @fonts -> % ( Str :$file!, Bool :$bold, Bool :$italic, Bool :$mono ) {
         # font preload
-        temp $!style .= new: :$bold, :$italic, :$mono;
-        my Str() $key = $!style.pattern;
-        die "no such font file: $file"
-            unless $file.IO.e;
-        %!fonts{$key} = HarfBuzz::Font::Cairo.new: :$file;
+        my Pod::To::Cairo::Style $style .= new: :$bold, :$italic, :$mono;
+        my Str() $key = $style.pattern;
+        if $file.IO.e {
+            %!fonts{$key} = HarfBuzz::Font::Cairo.new: :$file;
+        }
+        else {
+            warn "no such font file: $file";
+        }
     }
     self.read($_) with $pod;
 }
@@ -117,7 +120,7 @@ multi method say($text) {
 
 method !link_begin($chunk, :$x!, :$y!) {
     if $.link.starts-with('#') {
-        my $dest = $.link.substr(1);
+        my $dest = dest-name $.link.substr(1);
         self!ctx.link_begin: :$dest;
     }
     else {
@@ -373,14 +376,14 @@ method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
     my constant HeadingSizes = 20, 16, 13, 11.5, 10, 10;
     my $font-size = HeadingSizes[$level - 1];
     my Bool $bold   = $level <= 4;
-    my Bool $italic = $level == 5;
+    my Bool $italic;
     my $lines-before = $.lines-before;
 
-    if $level == 1 {
-        self!new-page;
-    }
-    elsif $level == 2 {
-        $lines-before = 3;
+    given $level {
+        when 1 { self!new-page; }
+        when 2 { $lines-before = 3; }
+        when 3 { $lines-before = 2; }
+        when 5 { $italic = True; }
     }
 
     self!style: :tag('H' ~ $level), :$font-size, :$bold, :$italic, :$underline, :$lines-before, {
@@ -563,7 +566,7 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
         when 'L' {
             my $text = pod2text($pod.contents);
             given $pod.meta.head // $text -> $link {
-                with IETF::RFC_Grammar::URI.parse($link) {
+                if $link.starts-with('#') || IETF::RFC_Grammar::URI.parse($link) {
                     self!style: :$link, {
                         $.print: $text;
                     }
