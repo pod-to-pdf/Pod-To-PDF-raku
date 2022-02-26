@@ -243,9 +243,9 @@ sub fit-widths($width is copy, @widths) {
 }
 
 sub dest-name(Str:D $_) {
+    # restrict to a smaller character set
     .trim
-    .subst(/\s+/, '_', :g)
-    .subst('#', '', :g);
+    .subst(/[\s|<-[0..9A..Za..z\-.~_]>]+/, '_', :g);
 }
 
 my constant vpad = 2;
