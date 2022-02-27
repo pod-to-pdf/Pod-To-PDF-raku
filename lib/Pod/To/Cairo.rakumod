@@ -41,7 +41,7 @@ method read($pod) {
     }
 }
 
-submethod TWEAK(:$pod, :@fonts, :%meta) {
+submethod TWEAK(:$pod, :@fonts, :%metadata) {
     for @fonts -> % ( Str :$file!, Bool :$bold, Bool :$italic, Bool :$mono ) {
         # font preload
         my Pod::To::Cairo::Style $style .= new: :$bold, :$italic, :$mono;
@@ -53,13 +53,13 @@ submethod TWEAK(:$pod, :@fonts, :%meta) {
             warn "no such font file: $file";
         }
     }
-    self.meta(.key.lc) = .value for %meta.pairs;
+    self.metadata(.key.lc) = .value for %metadata.pairs;
     self.read($_) with $pod;
 }
 
 # Backend specific methods
 method render(|) {...}
-method meta($?) is rw { $ }
+method metadata($?) is rw { $ }
 method add-toc-entry(Str:D $Title, Str :$dest!, Level :$level! ) { }
 
 multi method pad(&codez) { $.pad; &codez(); $.pad}
@@ -448,7 +448,7 @@ multi method pod2pdf(Pod::Block::Named $pod) {
             default     {
                 given $pod.name {
                     when 'TITLE'|'VERSION'|'SUBTITLE'|'NAME'|'AUTHOR'|'VERSION' {
-                        self.meta(.lc) //= pod2text($pod.contents);
+                        self.metadata(.lc) ||= pod2text($pod.contents);
                     }
                     default {
                         warn "unrecognised POD named block: $_";

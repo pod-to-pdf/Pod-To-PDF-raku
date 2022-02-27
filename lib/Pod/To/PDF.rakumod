@@ -57,14 +57,12 @@ method add-toc-entry(Str:D $Title, Str :$dest!, UInt:D :$level! ) {
     @!outline-stack.push: $toc-id;
 }
 
-enum MetaData (
+subset PodMetaType of Str where 'title'|'subtitle'|'author'|'name'|'version';
+constant %PdfMetaData =  (
     :title(CAIRO_PDF_METADATA_TITLE),
-    :version(CAIRO_PDF_METADATA_TITLE),
-    :name(CAIRO_PDF_METADATA_TITLE),
     :author(CAIRO_PDF_METADATA_AUTHOR),
     :subtitle(CAIRO_PDF_METADATA_SUBJECT),
 );
-subset MetaDataType of Str where 'title'|'subtitle'|'author'|'name'|'version';
 
 method !build-metadata-title {
     my @title = $_ with %!metadata<title>;
@@ -76,15 +74,22 @@ method !build-metadata-title {
     @title.join: ' ';
 }
 
-method !set-metadata(MetaDataType $t, $v) {
-    %!metadata{$t} = $v;
-    my $pdf-v = $t ~~ 'title'|'version'|'name'
+method !set-metadata(PodMetaType $key, $value) {
+
+    %!metadata{$key} = $value;
+
+    my UInt $pdf-key =  $key ~~ 'title'|'version'|'name'
+       ?? %PdfMetaData<title>
+       !! %PdfMetaData{$key};
+
+    my $pdf-value = $pdf-key == %PdfMetaData<title>
         ?? self!build-metadata-title()
-        !! $v;
-    self.surface.set_metadata(MetaData.enums{$t}.value, $pdf-v);
+        !! $value;
+
+    self.surface.set_metadata($pdf-key, $pdf-value);
 }
 
-multi method metadata(MetaDataType $t) is rw {
+multi method metadata(PodMetaType $t) is rw {
     Proxy.new(
         FETCH => { %!metadata{$t} },
         STORE => -> $, Str:D() $v {

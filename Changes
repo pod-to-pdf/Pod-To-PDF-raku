@@ -1,8 +1,10 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
-    - Add metadata method. store =TITLE =AUTHOR etc in PDF metadata.
+    - Add metadata method.
+    - Store =TITLE =AUTHOR etc in PDF metadata.
     - Fix indentation of item lists
+    - Inherit width and height attributes from surface
 
 0.0.4  2022-02-27T06:13:12+13:00
     - Fix internal links
