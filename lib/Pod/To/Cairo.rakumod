@@ -11,8 +11,6 @@ use IETF::RFC_Grammar::URI;
 subset Level of Int:D where 1..6;
 my constant Gutter = 3;
 
-has $.width = 512;
-has $.height = 720;
 has UInt $!indent = 0;
 has $.margin = 20;
 has $!gutter = Gutter;
@@ -29,7 +27,9 @@ has Bool $.verbose;
 
 enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Paragraph<P>, :Span<Span>, :Section<Section>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
-has Cairo::Surface:D $.surface is required;
+has Cairo::Surface:D $.surface is required handles <width height>;
+has $!width  = $!surface.width;
+has $!height = $!surface.height;
 has Cairo::Context $.ctx .= new: $!surface;
 has Pod::To::Cairo::Style $.style handles<font font-size leading line-height bold italic mono underline lines-before link> .= new: :$!ctx;
 
@@ -41,7 +41,7 @@ method read($pod) {
     }
 }
 
-submethod TWEAK(:$pod, :@fonts) {
+submethod TWEAK(:$pod, :@fonts, :%meta) {
     for @fonts -> % ( Str :$file!, Bool :$bold, Bool :$italic, Bool :$mono ) {
         # font preload
         my Pod::To::Cairo::Style $style .= new: :$bold, :$italic, :$mono;
@@ -53,13 +53,14 @@ submethod TWEAK(:$pod, :@fonts) {
             warn "no such font file: $file";
         }
     }
+    self.meta(.key.lc) = .value for %meta.pairs;
     self.read($_) with $pod;
 }
 
+# Backend specific methods
 method render(|) {...}
-method title { }
+method meta($?) is rw { $ }
 method add-toc-entry(Str:D $Title, Str :$dest!, Level :$level! ) { }
-
 
 multi method pad(&codez) { $.pad; &codez(); $.pad}
 multi method pad($!pad = 2) {}
@@ -88,10 +89,10 @@ method !curr-font {
     }
 }
 
-method !style(&codez, Bool :$indent, Str :tag($name), Bool :$pad, |c) {
+method !style(&codez, Int :$indent, Str :tag($name), Bool :$pad, |c) {
     temp $!style .= clone: |c;
     temp $!indent;
-    $!indent += 1 if $indent;
+    $!indent += $indent if $indent;
     $.pad if $pad;
     my $rv := $name ?? self!ctx.tag($name, &codez) !! &codez();
     $.pad if $pad;
@@ -446,19 +447,8 @@ multi method pod2pdf(Pod::Block::Named $pod) {
             }
             default     {
                 given $pod.name {
-                    when 'TITLE' {
-                        my Str $title = pod2text($pod.contents);
-                        self.title //= $title;
-                        $.pad: {
-                            self!heading: $title, :level(1);
-                        }
-                    }
-                    when 'SUBTITLE'|'NAME'|'AUTHOR'|'VERSION' {
-                        my $title = pod2text($pod.contents);
-                        $.pad: {
-                            self!heading: $title, :level(2);
-                            $.pod2pdf($pod.contents);
-                        }
+                    when 'TITLE'|'VERSION'|'SUBTITLE'|'NAME'|'AUTHOR'|'VERSION' {
+                        self.meta(.lc) //= pod2text($pod.contents);
                     }
                     default {
                         warn "unrecognised POD named block: $_";
@@ -473,12 +463,12 @@ multi method pod2pdf(Pod::Block::Named $pod) {
 
 multi method pod2pdf(Pod::Item $pod) {
     $.pad: {
-        self!style: :tag(ListItem), {
+        my Level $list-level = min($pod.level // 1, 3);
+        self!style: :tag(ListItem), :pad, :indent($list-level), {
             {
                 my constant BulletPoints = ("\c[BULLET]",
                                             "\c[WHITE BULLET]",
                                             '-');
-                my Level $list-level = min($pod.level // 1, 3);
                 my $bp = BulletPoints[$list-level - 1];
                 self!style: :tag(Label), {
                     $.print: $bp;

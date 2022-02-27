@@ -91,7 +91,7 @@ method layout(
                 $wb-j = $j;
             }
             elsif ($x - $!x) > $!width && !$first-word {
-                # word exceeds line length. back-out this word and
+                # partial word exceeds line length. back it out and
                 # restart on next line
                 $nl ||= 1;
                 $i = $wb-i;

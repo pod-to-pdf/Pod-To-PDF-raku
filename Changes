@@ -1,6 +1,8 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+    - Add metadata method. store =TITLE =AUTHOR etc in PDF metadata.
+    - Fix indentation of item lists
 
 0.0.4  2022-02-27T06:13:12+13:00
     - Fix internal links

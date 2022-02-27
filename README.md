@@ -93,7 +93,17 @@ my Cairo::Surface::PDF $pdf = pod2pdf($=pod, :@fonts, :pdf-file<out.pdf>);
 $pdf.finish();
 ```
 
-Each font entry should have a `file` entry and various combinations of `bold`, `italic` and `mono` flags. Note that `mono` is used to render code blocks and inline code. 
+Each font entry should have a `file` entry and various combinations of `bold`, `italic` and `mono` flags. Note that `mono` is used to render code blocks and inline code.
+
+**Str :%metadata**
+
+
+
+This can be used to preset values for `title`, `subtitle`, `name`, `author` or `version`.
+
+This is an alternative to, and will override `=TITLE`, C=<SUBTITLE>, `=NAME`, `=AUTHOR` or `=VERSION` directives.
+
+Note: All of these are options are provided for compatibility, however only `=TITLE` and `=AUTHOR` are directly supported in PDF metadata.
 
 **`:!contents`**
 
@@ -109,13 +119,13 @@ Please check these module's installation instructions.
 Testing
 -------
 
-Installation of the [PDF::Tags::Reader](PDF::Tags::Reader) module is recommended to enables structural testing.
+Note that installation of the [PDF::Tags::Reader](PDF::Tags::Reader) module enables structural testing. 
 
 For example, to test this module from source.
 
     $ git clone https://github.com/dwarring/Pod-To-PDF-raku
     $ cd Pod-To-PDF-raku
-    $ zef install PDF::Tags::Reader
+    $ zef install PDF::Tags::Reader # enable structural tests
     $ zef APP::Prove6
     $ zef --deps-only install .
     $ prove6 -I .

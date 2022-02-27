@@ -5,7 +5,7 @@ unit class Pod::To::PDF:ver<0.0.4>
 use Cairo;
 use File::Temp;
 
-has Str $!title;
+has Str %!metadata;
 has int32 @!outline-stack;
 
 submethod TWEAK(Str :$title, Str :$lang = 'en') {
@@ -23,7 +23,7 @@ method render(
     state %cache{Any};
     %cache{$pod}{$width~'x'~$height} //= do {
         my Cairo::Surface::PDF $surface .= create($pdf-file, $width, $height);
-        $class.new(:$pod, :$surface, :$width, :$height, |c);
+        $class.new(:$pod, :$surface, |c);
         $surface.finish;
         $pdf-file;
     }
@@ -57,14 +57,43 @@ method add-toc-entry(Str:D $Title, Str :$dest!, UInt:D :$level! ) {
     @!outline-stack.push: $toc-id;
 }
 
-method title is rw {
+enum MetaData (
+    :title(CAIRO_PDF_METADATA_TITLE),
+    :version(CAIRO_PDF_METADATA_TITLE),
+    :name(CAIRO_PDF_METADATA_TITLE),
+    :author(CAIRO_PDF_METADATA_AUTHOR),
+    :subtitle(CAIRO_PDF_METADATA_SUBJECT),
+);
+subset MetaDataType of Str where 'title'|'subtitle'|'author'|'name'|'version';
+
+method !build-metadata-title {
+    my @title = $_ with %!metadata<title>;
+    with %!metadata<name> {
+        @title.push: '-' if @title;
+        @title.push: $_;
+    }
+    @title.push: 'v' ~ $_ with %!metadata<version>;
+    @title.join: ' ';
+}
+
+method !set-metadata(MetaDataType $t, $v) {
+    %!metadata{$t} = $v;
+    my $pdf-v = $t ~~ 'title'|'version'|'name'
+        ?? self!build-metadata-title()
+        !! $v;
+    self.surface.set_metadata(MetaData.enums{$t}.value, $pdf-v);
+}
+
+multi method metadata(MetaDataType $t) is rw {
     Proxy.new(
-        FETCH => { $!title },
-        STORE => -> $, $!title {
-            self.surface.set_metadata(CAIRO_PDF_METADATA_TITLE, $!title);
+        FETCH => { %!metadata{$t} },
+        STORE => -> $, Str:D() $v {
+            self!set-metadata($t, $v);
         }
     )
 }
+
+multi method metadata { %!metadata.clone }
 
 =begin pod
 =TITLE
@@ -150,7 +179,18 @@ $pdf.finish();
 =end code
 Each font entry should have a `file` entry and various
 combinations of `bold`, `italic` and `mono` flags. Note
-that `mono` is used to render code blocks and inline code. 
+that `mono` is used to render code blocks and inline code.
+
+=defn Str :%metadata
+
+This can be used to preset values for C<title>, C<subtitle>,
+C<name>, C<author> or C<version>.
+
+This is an alternative to, and will override C<=TITLE>, C=<SUBTITLE>,
+C<=NAME>, C<=AUTHOR> or C<=VERSION> directives.
+
+Note: All of these are options are provided for compatibility, however
+only C<=TITLE> and C<=AUTHOR> are directly supported in PDF metadata.
 
 =defn `:!contents`
 Disables Table of Contents generation.
@@ -163,15 +203,14 @@ Please check these module's installation instructions.
 
 =head2 Testing
 
-Installation of the L<PDF::Tags::Reader> module is recommended to
-enables structural testing.
+Note that installation of the L<PDF::Tags::Reader> module enables structural testing. 
 
 For example, to test this module from source.
 
 =begin code
 $ git clone https://github.com/dwarring/Pod-To-PDF-raku
 $ cd Pod-To-PDF-raku
-$ zef install PDF::Tags::Reader
+$ zef install PDF::Tags::Reader # enable structural tests
 $ zef APP::Prove6
 $ zef --deps-only install .
 $ prove6 -I .
