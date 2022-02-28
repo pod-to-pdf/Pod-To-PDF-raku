@@ -101,7 +101,7 @@ Each font entry should have a `file` entry and various combinations of `bold`, `
 
 This can be used to preset values for `title`, `subtitle`, `name`, `author` or `version`.
 
-This is an alternative to, and will override `=TITLE`, C=<SUBTITLE>, `=NAME`, `=AUTHOR` or `=VERSION` directives.
+This is an alternative to, and will override `=TITLE`, `=SUBTITLE`, `=NAME`, `=AUTHOR` or `=VERSION` directives.
 
 Note: All of these are options are provided for compatibility, however only `=TITLE` and `=AUTHOR` are directly supported in PDF metadata.
 

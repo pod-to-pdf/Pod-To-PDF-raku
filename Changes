@@ -1,6 +1,8 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+
+0.0.7  2022-03-01T12:21:34+13:00
     - Fix continued code blocks
     - Set default page size to letter (612x792 pt)
 
