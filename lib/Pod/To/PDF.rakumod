@@ -16,8 +16,8 @@ submethod TWEAK(Str :$title, Str :$lang = 'en') {
 method render(
     $class: $pod,
     :$pdf-file = tempfile("POD6-****.pdf", :!unlink)[0],
-    UInt:D :$width  = 512,
-    UInt:D :$height = 720,
+    UInt:D :$width  = 612,
+    UInt:D :$height = 792,
     |c,
 ) {
     state %cache{Any};
@@ -33,8 +33,8 @@ our sub pod2pdf(
     $pod,
     :$class = $?CLASS,
     Str() :$pdf-file = tempfile("POD6-****.pdf", :!unlink)[0],
-    UInt:D :$width  = 512,
-    UInt:D :$height = 720,
+    UInt:D :$width  = 612,
+    UInt:D :$height = 792,
     Cairo::Surface::PDF :$surface = Cairo::Surface::PDF.create($pdf-file, $width, $height);
     |c,
 ) is export {
@@ -191,7 +191,7 @@ that `mono` is used to render code blocks and inline code.
 This can be used to preset values for C<title>, C<subtitle>,
 C<name>, C<author> or C<version>.
 
-This is an alternative to, and will override C<=TITLE>, C=<SUBTITLE>,
+This is an alternative to, and will override C<=TITLE>, C<=SUBTITLE>,
 C<=NAME>, C<=AUTHOR> or C<=VERSION> directives.
 
 Note: All of these are options are provided for compatibility, however

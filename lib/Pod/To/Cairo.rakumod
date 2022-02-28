@@ -99,9 +99,8 @@ method !style(&codez, Int :$indent, Str :tag($name), Bool :$pad, |c) {
     $rv;
 }
 
-my $n;
 method !height-remaining {
-    $!height - $!ty - $!margin - ($!gutter-lines + $.lines-before) * $.line-height
+    $!height - $!ty - $!margin - $!gutter-lines * $.line-height
 }
 
 method !text-chunk(
@@ -211,7 +210,7 @@ method !new-page {
 }
 
 method !ctx {
-    if self!height-remaining < $.line-height {
+    if self!height-remaining < $.lines-before * $.line-height {
         self!new-page;
     }
     elsif $!tx > $!margin && $!tx > $!width - self!indent {
@@ -308,7 +307,7 @@ method !table-row(@row, @widths, Bool :$header) {
 }
 
 method !table-cell($pod) {
-    my $text = pod2text-line($pod);
+    my $text = pod2text-inline($pod);
     self!text-chunk: $text, :width(Inf), :height(Inf), :flow(0 + 0i);
 }
 
@@ -365,11 +364,11 @@ multi method pod2pdf(Pod::Block::Table $pod) {
     }
 }
 
-has UInt %!dests-taken;
-method !make-dest-name($title, $seq = '') {
+has UInt %!dest-collision;
+method !gen-dest-name($title, $seq = '') {
     my $name = dest-name($title ~ $seq);
-    if %!dests-taken{$name}++ {
-        self!make-dest-name($title, ($seq||0) + 1);
+    if %!dest-collision{$name}++ {
+        self!gen-dest-name($title, ($seq||0) + 1);
     }
     else {
         $name;
@@ -392,7 +391,7 @@ method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
 
     self!style: :tag('H' ~ $level), :$font-size, :$bold, :$italic, :$underline, :$lines-before, {
 
-        my Str:D $name = self!make-dest-name($Title);
+        my Str:D $name = self!gen-dest-name($Title);
         self!pad-here;
         self!ctx.destination: :$name, {
             $.say($Title);
@@ -431,6 +430,7 @@ method !code(Str $code is copy, :$inline) {
                     .restore;
                 }
             }
+            self!new-page if overflow;
         }
     }
 }
@@ -453,7 +453,7 @@ multi method pod2pdf(Pod::Block::Named $pod) {
                     when 'TITLE'|'VERSION'|'SUBTITLE'|'NAME'|'AUTHOR'|'VERSION' {
                         self!heading( node2text($pod.contents), :level(1))
                             if $_ ~~ 'TITLE';
-                        self.metadata(.lc) ||= pod2text-line($pod.contents);
+                        self.metadata(.lc) ||= pod2text-inline($pod.contents);
                     }
                     default {
                         warn "unrecognised POD named block: $_";
@@ -549,7 +549,7 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                 temp $!style .= new;
                 temp $!tx = $!margin;
                 temp $!ty = $!margin;
-                my $draft-footnote = $ind ~ pod2text-line($pod.contents);
+                my $draft-footnote = $ind ~ pod2text-inline($pod.contents);
                 $!gutter-lines += self!text-chunk($draft-footnote).lines;
             }
         }
@@ -566,7 +566,7 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             $.pod2pdf($pod.contents);
         }
         when 'L' {
-            my $text = pod2text-line($pod.contents);
+            my $text = pod2text-inline($pod.contents);
             my %link;
             given $pod.meta.head // $text {
                 when .starts-with('#') {
@@ -735,7 +735,7 @@ method !draw-line($x0, $y0, $x1, $y1 = $y0, :$linewidth = 1) {
 
 method !indent { $!margin + 10 * $!indent; }
 
-sub pod2text-line($pod) {
+sub pod2text-inline($pod) {
     pod2text($pod).subst(/\s+/, ' ', :g);
 }
 

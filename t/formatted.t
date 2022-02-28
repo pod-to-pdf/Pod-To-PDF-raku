@@ -37,10 +37,9 @@ my $xml = q{<Document>
     This text contains a link with label to <Link href="http://www.google.com/">google</Link>.
   </P>
   <P>
-    A tap on an <Code>on demand</Code> supply will initiate the production of values, and tapping the supply
-again may result in a new set of values. For example, <Code>Supply.interval</Code> produces a fresh timer
-with the appropriate interval each time it is tapped. If the tap is closed, the timer simply
-stops emitting values to that tap.
+    A tap on an <Code>on demand</Code> supply will initiate the production of values, and tapping the supply again may result in a
+new set of values. For example, <Code>Supply.interval</Code> produces a fresh timer with the appropriate interval each time it
+is tapped. If the tap is closed, the timer simply stops emitting values to that tap.
   </P>
 </Document>
 };
