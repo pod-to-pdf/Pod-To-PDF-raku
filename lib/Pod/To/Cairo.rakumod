@@ -451,6 +451,8 @@ multi method pod2pdf(Pod::Block::Named $pod) {
             default     {
                 given $pod.name {
                     when 'TITLE'|'VERSION'|'SUBTITLE'|'NAME'|'AUTHOR'|'VERSION' {
+                        self!heading( node2text($pod.contents), :level(1))
+                            if $_ ~~ 'TITLE';
                         self.metadata(.lc) ||= pod2text-line($pod.contents);
                     }
                     default {

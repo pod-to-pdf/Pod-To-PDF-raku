@@ -2,6 +2,9 @@ Revision history for Pod-To-PDF
 
 {{$NEXT}}
 
+0.0.6  2022-02-28T16:34:43+13:00
+    - Fix footnote positioning and pagination logic
+
 0.0.5  2022-02-28T09:52:23+13:00
     - Add metadata method.
     - Store =TITLE =AUTHOR etc in PDF metadata.
