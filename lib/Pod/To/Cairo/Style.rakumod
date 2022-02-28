@@ -9,7 +9,7 @@ has Bool $.underline;
 has Bool $.mono;
 has UInt $.lines-before = 1;
 has $.font-size = 10;
-has $.link;
+has %.link;
 has FontConfig $.pattern is built;
 
 method clone { nextwith :pattern(FontConfig), |%_; }

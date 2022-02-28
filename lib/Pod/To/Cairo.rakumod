@@ -9,13 +9,11 @@ use Pod::To::Text;
 use IETF::RFC_Grammar::URI;
 
 subset Level of Int:D where 1..6;
-my constant Gutter = 3;
+my constant Gutter = 1;
 
 has UInt $!indent = 0;
 has $.margin = 20;
-has $!gutter = Gutter;
-has $!tx = $!margin; # text-flow x
-has $!ty = $!margin; # text-flow y
+has $!gutter-lines = Gutter;
 has UInt $!pad = 0;
 has UInt $!page-num = 1;
 has HarfBuzz::Font::Cairo %!fonts;
@@ -24,6 +22,7 @@ has Str $!cur-font-patt = '';
 has @!footnotes;
 has Bool $.contents = True;
 has Bool $.verbose;
+has Bool $!blank-page = True;
 
 enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Paragraph<P>, :Span<Span>, :Section<Section>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
@@ -32,7 +31,8 @@ has $!width  = $!surface.width;
 has $!height = $!surface.height;
 has Cairo::Context $.ctx .= new: $!surface;
 has Pod::To::Cairo::Style $.style handles<font font-size leading line-height bold italic mono underline lines-before link> .= new: :$!ctx;
-
+has $!tx = $!margin; # text-flow x
+has $!ty = $!margin + self.font-size; # text-flow y
 
 method read($pod) {
     $!ctx.tag: Document, {
@@ -99,10 +99,15 @@ method !style(&codez, Int :$indent, Str :tag($name), Bool :$pad, |c) {
     $rv;
 }
 
+my $n;
+method !height-remaining {
+    $!height - $!ty - $!margin - ($!gutter-lines + $.lines-before) * $.line-height
+}
+
 method !text-chunk(
     Str $text,
-    Numeric :$width = $!surface.width - self!indent - $!margin,
-    Numeric :$height = $!surface.height - $!ty - $!margin,
+    Numeric :$width = $!width - self!indent - $!margin,
+    Numeric :$height = self!height-remaining,
     Complex :$flow = ($!tx - self!indent) + 0i;
     |c,
 ) {
@@ -112,7 +117,8 @@ method !text-chunk(
 
 multi method say {
     $!tx = self!indent;
-    $!ty += $.line-height;
+    $!ty += $.line-height
+        unless $!blank-page;
 }
 
 multi method say($text) {
@@ -120,27 +126,25 @@ multi method say($text) {
 }
 
 method !link_begin($chunk, :$x!, :$y!) {
-    if $.link.starts-with('#') {
-        my $dest = dest-name $.link.substr(1);
-        self!ctx.link_begin: :$dest;
-    }
-    else {
-        my $uri = $.link;
+    my %link = %.link;
+    if %link<uri> {
         my $width = $chunk.lines > 1 ?? $chunk.width !! $chunk.flow.re - $!tx + $x;
         my $height = $chunk.content-height;
         my @rect = [$!tx, $!ty - $.font-size, $width, $height];
-        self!ctx.link_begin: :$uri, :@rect;
+        %link ,= :@rect;
     }
+    self!ctx.link_begin: |%link;
 }
 
 method print($text is copy, Bool :$nl) {
     self!pad-here;
+    $!blank-page = False;
     $text ~= "\n" if $nl && !$text.ends-with: "\n";
     my $x = self!indent;
     my $y = $!ty;
     my $chunk = self!text-chunk($text, :$x, :$y);
 
-    if $.link {
+    if %.link {
         self!link_begin: $chunk, :$x, :$y;
         $!ctx.save;
         $!ctx.rgb(.1, .1, 1);
@@ -149,7 +153,7 @@ method print($text is copy, Bool :$nl) {
     $chunk.print(:$!ctx);
     self!underline($chunk) if $.underline;
 
-    if $.link {
+    if %.link {
         $!ctx.restore;
         $!ctx.link_end;
     }
@@ -172,10 +176,10 @@ method !finish-page {
     if @!footnotes {
         temp $!style .= new: :lines-before(0); # avoid current styling
         $!tx = $!margin;
-        $!ty = $!height - 2*$!margin - $!gutter;
-        $!gutter = 0;
+        $!ty = $!height - $!margin - $!gutter-lines * $.line-height;
 
-        self!draw-line($!margin, $!ty, $!width - 2*$!margin, $!ty);
+        self!draw-line($!margin, $!ty, $!width - $!margin, $!ty);
+        temp $!gutter-lines = 0;
 
         while @!footnotes {
             $.pad(1);
@@ -183,10 +187,9 @@ method !finish-page {
             self!style: :tag(Note), {
                 my $y = $footnote.shift;
                 my $ind = $footnote.shift;
-                self!style: :tag(Label), {
-                    $!ctx.link: :page($!page-num), :pos[$!margin, $y], {
-                        $.print($ind); #[n]
-                    }
+                my %link = :page($!page-num), :pos[$!margin, $y];
+                self!style: :tag(Label), :%link, {
+                    $.print($ind); #[n]
                 }
                 $!tx += 5;
                 $.pod2pdf($footnote);
@@ -197,18 +200,18 @@ method !finish-page {
 
 method !new-page {
     self!finish-page();
-    $!gutter = Gutter;
-     unless $!page-num == 1 && $!ty == $!margin {
+    $!gutter-lines = Gutter;
+     unless $!blank-page {
          $!surface.show_page;
          $!tx  = self!indent;
-         $!ty  = $!margin;
+         $!ty  = $!margin + $.font-size;
+         $!page-num++;
+         $!blank-page = True;
      }
-    $!page-num++;
 }
 
 method !ctx {
-    my $y = $!ty + ($.lines-before + $!gutter) * $.line-height;
-    if $y > $!height - $!margin {
+    if self!height-remaining < $.line-height {
         self!new-page;
     }
     elsif $!tx > $!margin && $!tx > $!width - self!indent {
@@ -305,7 +308,7 @@ method !table-row(@row, @widths, Bool :$header) {
 }
 
 method !table-cell($pod) {
-    my $text = pod2text($pod);
+    my $text = pod2text-line($pod);
     self!text-chunk: $text, :width(Inf), :height(Inf), :flow(0 + 0i);
 }
 
@@ -408,7 +411,7 @@ method !code(Str $code is copy, :$inline) {
 
     self!style: :mono, :indent(!$inline), :tag(CODE), :$font-size, :$lines-before, {
         while $code {
-            my (\w, \h, \overflow) = @.print: $code, :!reflow;
+            my (\w, \h, \overflow) = @.print: $code;
             $code = overflow;
 
             unless $inline {
@@ -448,7 +451,7 @@ multi method pod2pdf(Pod::Block::Named $pod) {
             default     {
                 given $pod.name {
                     when 'TITLE'|'VERSION'|'SUBTITLE'|'NAME'|'AUTHOR'|'VERSION' {
-                        self.metadata(.lc) ||= pod2text($pod.contents);
+                        self.metadata(.lc) ||= pod2text-line($pod.contents);
                     }
                     default {
                         warn "unrecognised POD named block: $_";
@@ -532,13 +535,20 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             }
         }
         when 'N' {
-            my @pos = $!margin, $!height - 2*$!margin - $!gutter;
-            $!ctx.link: :page($!page-num), :@pos, {
-                my $ind = '[' ~ @!footnotes+1 ~ ']';
-                self!style: :tag(Label), {  $.pod2pdf($ind); }
-                my @contents = $!ty - $.line-height, $ind, $pod.contents.Slip;
-                @!footnotes.push: @contents;
-                $!gutter += self!text-chunk(pod2text(@contents)).lines;
+            # rough positioning to footnote area
+            my @pos = $!margin, $!height - $!margin - (Gutter+2) * $.line-height;
+            my %link = :page($!page-num), :@pos;
+            my $ind = '[' ~ @!footnotes+1 ~ ']';
+            self!style: :tag(Label), :%link, {  $.pod2pdf($ind); }
+            my @contents = $!ty - $.line-height, $ind, $pod.contents.Slip;
+            @!footnotes.push: @contents;
+            do {
+                # pre-compute footnote size 
+                temp $!style .= new;
+                temp $!tx = $!margin;
+                temp $!ty = $!margin;
+                my $draft-footnote = $ind ~ pod2text-line($pod.contents);
+                $!gutter-lines += self!text-chunk($draft-footnote).lines;
             }
         }
         when 'U' {
@@ -554,17 +564,20 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             $.pod2pdf($pod.contents);
         }
         when 'L' {
-            my $text = pod2text($pod.contents);
-            given $pod.meta.head // $text -> $link {
-                if $link.starts-with('#') || IETF::RFC_Grammar::URI.parse($link) {
-                    self!style: :$link, {
-                        $.print: $text;
-                    }
+            my $text = pod2text-line($pod.contents);
+            my %link;
+            given $pod.meta.head // $text {
+                when .starts-with('#') {
+                    %link<dest> = dest-name .substr(1);
                 }
-                else {
-                    warn "ignoring invalid link: $link";
-                    $.print: $text;
+                when IETF::RFC_Grammar::URI.parse($_) {
+                    %link<uri> = $_;
                 }
+                default {
+                }
+            }
+            self!style: :%link, {
+                $.print: $text;
             }
         }
         default {
@@ -708,7 +721,7 @@ method !underline($tc, :$tab = self!indent, ) {
 }
 
 method !draw-line($x0, $y0, $x1, $y1 = $y0, :$linewidth = 1) {
-    given self!ctx {
+    given $!ctx {
         .save;
         .line_width = $linewidth;
         .move_to: $x0, $y0;
@@ -719,6 +732,10 @@ method !draw-line($x0, $y0, $x1, $y1 = $y0, :$linewidth = 1) {
 }
 
 method !indent { $!margin + 10 * $!indent; }
+
+sub pod2text-line($pod) {
+    pod2text($pod).subst(/\s+/, ' ', :g);
+}
 
 sub node2text($pod) {
     pod2text($pod);
