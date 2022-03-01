@@ -28,8 +28,7 @@ my $xml = q{<Document>
     Subheading2
   </H2>
   <H1>
-    Delimited
-    heading1
+    Delimited heading1
   </H1>
   <H3>
     Heading3

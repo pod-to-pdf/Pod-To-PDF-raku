@@ -338,7 +338,7 @@ multi method pod2pdf(Pod::Block::Table $pod) {
     self!style: :lines-before(3), :pad, {
         $!ctx.tag: Table, {
             if $pod.caption -> $caption {
-                self!style: :tag(Caption), :bold, {
+                self!style: :tag(Caption), :italic, {
                     $.say: $caption;
                 }
             }
@@ -364,10 +364,10 @@ multi method pod2pdf(Pod::Block::Table $pod) {
     }
 }
 
-has UInt %!dest-collision;
+has UInt %!dest-used;
 method !gen-dest-name($title, $seq = '') {
     my $name = dest-name($title ~ $seq);
-    if %!dest-collision{$name}++ {
+    if %!dest-used{$name}++ {
         self!gen-dest-name($title, ($seq||0) + 1);
     }
     else {
@@ -402,13 +402,14 @@ method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
 }
 
 method !code(Str $code is copy, :$inline) {
-    $code .= chomp;
     my $font-size = 8;
     my $lines-before = $.lines-before;
     $lines-before = min(+$code.lines, 3)
         unless $inline;
 
     self!style: :mono, :indent(!$inline), :tag(CODE), :$font-size, :$lines-before, {
+        $code .= chomp;
+
         while $code {
             my (\w, \h, \overflow) = @.print: $code;
             $code = overflow;
@@ -451,9 +452,10 @@ multi method pod2pdf(Pod::Block::Named $pod) {
             default     {
                 given $pod.name {
                     when 'TITLE'|'VERSION'|'SUBTITLE'|'NAME'|'AUTHOR'|'VERSION' {
-                        self!heading( node2text($pod.contents), :level(1))
+                        my $text = pod2text-inline($pod.contents);
+                        self!heading($text, :level(1))
                             if $_ ~~ 'TITLE';
-                        self.metadata(.lc) ||= pod2text-inline($pod.contents);
+                        self.metadata(.lc) ||= $text;
                     }
                     default {
                         warn "unrecognised POD named block: $_";
@@ -492,14 +494,14 @@ multi method pod2pdf(Pod::Item $pod) {
 
 multi method pod2pdf(Pod::Block::Code $pod) {
     $.pad: {
-        self!code: $pod.contents.join;
+        self!code: pod2text-code($pod.contents);
     }
 }
 
 multi method pod2pdf(Pod::Heading $pod) {
     $.pad: {
         my Level $level = min($pod.level, 6);
-        self!heading( node2text($pod.contents), :$level);
+        self!heading( pod2text-inline($pod.contents), :$level);
     }
 }
 
@@ -735,12 +737,15 @@ method !draw-line($x0, $y0, $x1, $y1 = $y0, :$linewidth = 1) {
 
 method !indent { $!margin + 10 * $!indent; }
 
+# we're currently throwing code formatting away
+multi sub pod2text-code(List $pod) {
+    $pod.map(&pod2text-code).join;
+}
+multi sub pod2text-code(Str $pod) { $pod }
+multi sub pod2text-code($pod) { pod2text($pod) }
+
 sub pod2text-inline($pod) {
     pod2text($pod).subst(/\s+/, ' ', :g);
-}
-
-sub node2text($pod) {
-    pod2text($pod);
 }
 
 submethod DESTROY {

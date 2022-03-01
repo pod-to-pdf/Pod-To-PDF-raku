@@ -49,6 +49,8 @@ code</Code>
   <P>
     asdf
   </P>
+  <Code>Formatted
+code</Code>
 </Document>
 };
 
@@ -108,4 +110,10 @@ code
 =end code
 
 asdf
+
+=begin code :allow<B>
+B<Formatted>
+code
+=end code
+
 =end pod
