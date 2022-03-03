@@ -8,7 +8,7 @@ use FontConfig;
 use Pod::To::Text;
 use IETF::RFC_Grammar::URI;
 
-subset Level of Int:D where 1..6;
+subset Level where 1..6;
 my constant Gutter = 1;
 
 has UInt $!indent = 0;
@@ -23,8 +23,9 @@ has @!footnotes;
 has Bool $.contents = True;
 has Bool $.verbose;
 has Bool $!blank-page = True;
+has UInt:D $!level = 1;
 
-enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Paragraph<P>, :Span<Span>, :Section<Section>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
+enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Paragraph<P>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
 has Cairo::Surface:D $.surface is required handles <width height>;
 has $!width  = $!surface.width;
@@ -389,7 +390,8 @@ method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
         when 5 { $italic = True; }
     }
 
-    self!style: :tag('H' ~ $level), :$font-size, :$bold, :$italic, :$underline, :$lines-before, {
+    my $tag = $level == $!level ?? 'H' !! 'H' ~ $level;
+    self!style: :$tag, :$font-size, :$bold, :$italic, :$underline, :$lines-before, {
 
         my Str:D $name = self!gen-dest-name($Title);
         self!pad-here;
@@ -449,19 +451,16 @@ multi method pod2pdf(Pod::Block::Named $pod) {
                     $.pod2pdf: $pod.contents;
                 }
             }
-            default     {
-                given $pod.name {
-                    when 'TITLE'|'VERSION'|'SUBTITLE'|'NAME'|'AUTHOR'|'VERSION' {
-                        my $text = pod2text-inline($pod.contents);
-                        self!heading($text, :level(1))
-                            if $_ ~~ 'TITLE';
-                        self.metadata(.lc) ||= $text;
-                    }
-                    default {
-                        warn "unrecognised POD named block: $_";
-                        $.say($_);
-                        $.pod2pdf($pod.contents);
-                    }
+            when 'TITLE'|'VERSION'|'SUBTITLE'|'NAME'|'AUTHOR'|'VERSION' {
+                self.metadata(.lc) ||= pod2text-inline($pod.contents);
+            }
+            default {
+                warn "unrecognised POD named block: $_"
+                    if $_ eq .uc|.lc;
+                $!ctx.tag: Section, {
+                    temp $!level += 1;
+                    self!heading($pod.name, :$!level);
+                    $.pod2pdf($pod.contents);
                 }
             }
         }
@@ -494,7 +493,7 @@ multi method pod2pdf(Pod::Item $pod) {
 
 multi method pod2pdf(Pod::Block::Code $pod) {
     $.pad: {
-        self!code: pod2text-code($pod.contents);
+        self!code: pod2text-code($pod);
     }
 }
 
@@ -738,11 +737,10 @@ method !draw-line($x0, $y0, $x1, $y1 = $y0, :$linewidth = 1) {
 method !indent { $!margin + 10 * $!indent; }
 
 # we're currently throwing code formatting away
-multi sub pod2text-code(List $pod) {
-    $pod.map(&pod2text-code).join;
+multi sub pod2text-code(Pod::Block $pod) {
+    $pod.contents.map(&pod2text-code).join;
 }
 multi sub pod2text-code(Str $pod) { $pod }
-multi sub pod2text-code($pod) { pod2text($pod) }
 
 sub pod2text-inline($pod) {
     pod2text($pod).subst(/\s+/, ' ', :g);

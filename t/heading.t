@@ -12,24 +12,24 @@ my Cairo::Surface $pdf = pod2pdf($=pod, :$pdf-file);
 lives-ok {$pdf.finish}
 
 my $xml = q{<Document>
-  <H1>
+  <H>
     Abbreviated heading1
-  </H1>
+  </H>
   <P>
     asdf
   </P>
-  <H1>
+  <H>
     Paragraph heading1
-  </H1>
+  </H>
   <P>
     asdf
   </P>
   <H2>
     Subheading2
   </H2>
-  <H1>
+  <H>
     Delimited heading1
-  </H1>
+  </H>
   <H3>
     Heading3
   </H3>

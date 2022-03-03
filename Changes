@@ -1,6 +1,7 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+    - Handle nested named blocks as sub-sections
 
 0.0.7  2022-03-01T12:21:34+13:00
     - Fix continued code blocks

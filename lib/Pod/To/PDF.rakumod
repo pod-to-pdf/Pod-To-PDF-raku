@@ -101,11 +101,10 @@ multi method metadata(PodMetaType $t) is rw {
 multi method metadata { %!metadata.clone }
 
 =begin pod
-=TITLE
+=TITLE Pod::To::PDF - Render Pod to PDF via Cairo
+=head1 Pod::To::PDF - Render Pod to PDF via Cairo
 
-Pod::To::PDF - Pod to PDF renderer
-
-=head2 Usage
+=begin Usage
 
 From command line:
 
@@ -125,16 +124,18 @@ From Raku:
     my Cairo::Surface::PDF $pdf = pod2pdf($=pod);
     $pdf.finish();
     =end code
+=end Usage
 
-=head2 Exports
+=begin Exports
 
     class Pod::To::PDF;
     sub pod2pdf; # See below
 
 From Raku code, the C<pod2pdf> function returns a L< Cairo::Surface::PDF> object which can
 be further manipulated, or finished to complete rendering.
+=end Exports
 
-=head2 Description
+=begin Description
 
 This module renders Pod to PDF documents via Cairo.
 
@@ -143,8 +144,9 @@ accessibility and testing purposes.
 
 It uses HarfBuzz for font shaping and glyph selection
 and FontConfig for system font loading.
+=end Description
 
-=head2 Methods and subroutines
+=begin Subroutines
 =head3 sub pod2pdf()
 =begin code :lang<raku>
 sub pod2pdf(
@@ -199,14 +201,16 @@ only C<=TITLE> and C<=AUTHOR> are directly supported in PDF metadata.
 
 =defn `:!contents`
 Disables Table of Contents generation.
+=end Subroutines
 
-=head2 Installation
+=begin Installation
 
 This module's dependencies include L<HarfBuzz|https://harfbuzz-raku.github.io/HarfBuzz-raku/>, L<Font::FreeType|https://pdf-raku.github.io/Font-FreeType-raku/>, L<FontConfig|https://raku.land/zef:dwarring/FontConfig> and L<Cairo|https://raku.land/github:timo/Cairo>, which further depend on native C<harfbuzz>, C<freetype6>, C<fontconfig> and C<cairo> libraries.
 
 Please check these module's installation instructions.
+=end Installation
 
-=head2 Testing
+=begin Testing
 
 Note that installation of the L<PDF::Tags::Reader> module enables structural testing. 
 
@@ -221,4 +225,5 @@ $ zef --deps-only install .
 $ prove6 -I .
 =end code
 
+=end Testing
 =end pod
