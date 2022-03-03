@@ -1,16 +1,17 @@
 TITLE
 =====
 
+Pod::To::PDF - Render Pod to PDF via Cairo
 
-
-Pod::To::PDF - Pod to PDF renderer
+Pod::To::PDF - Render Pod to PDF via Cairo
+==========================================
 
 Usage
------
+=====
 
 From command line:
 
-    $ raku --doc=PDF lib/to/class.rakumod | xargs evince
+$ raku --doc=PDF lib/to/class.rakumod | xargs evince
 
 From Raku:
 
@@ -29,15 +30,14 @@ $pdf.finish();
 ```
 
 Exports
--------
+=======
 
-    class Pod::To::PDF;
-    sub pod2pdf; # See below
+class Pod::To::PDF; sub pod2pdf; # See below
 
 From Raku code, the `pod2pdf` function returns a [Cairo::Surface::PDF](Cairo::Surface::PDF) object which can be further manipulated, or finished to complete rendering.
 
 Description
------------
+===========
 
 This module renders Pod to PDF documents via Cairo.
 
@@ -45,8 +45,8 @@ The generated PDF has a table of contents and is tagged for accessibility and te
 
 It uses HarfBuzz for font shaping and glyph selection and FontConfig for system font loading.
 
-Methods and subroutines
------------------------
+Subroutines
+===========
 
 ### sub pod2pdf()
 
@@ -110,14 +110,14 @@ Note: All of these are options are provided for compatibility, however only `=TI
 Disables Table of Contents generation.
 
 Installation
-------------
+============
 
 This module's dependencies include [HarfBuzz](https://harfbuzz-raku.github.io/HarfBuzz-raku/), [Font::FreeType](https://pdf-raku.github.io/Font-FreeType-raku/), [FontConfig](https://raku.land/zef:dwarring/FontConfig) and [Cairo](https://raku.land/github:timo/Cairo), which further depend on native `harfbuzz`, `freetype6`, `fontconfig` and `cairo` libraries.
 
 Please check these module's installation instructions.
 
 Testing
--------
+=======
 
 Note that installation of the [PDF::Tags::Reader](PDF::Tags::Reader) module enables structural testing. 
 
