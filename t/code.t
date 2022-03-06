@@ -15,42 +15,56 @@ my $xml = q{<Document>
   <P>
     asdf
   </P>
-  <Code>indented</Code>
+  <P>
+    <Code>indented</Code>
+  </P>
   <P>
     asdf
   </P>
-  <Code>indented
+  <P>
+    <Code>indented
 multi
 line</Code>
+  </P>
   <P>
     asdf
   </P>
-  <Code>indented
+  <P>
+    <Code>indented
 multi
 line
     nested
 and
 broken
 up</Code>
+  </P>
   <P>
     asdf
   </P>
-  <Code>Abbreviated</Code>
+  <P>
+    <Code>Abbreviated</Code>
+  </P>
   <P>
     asdf
   </P>
-  <Code>Paragraph
+  <P>
+    <Code>Paragraph
 code</Code>
+  </P>
   <P>
     asdf
   </P>
-  <Code>Delimited
+  <P>
+    <Code>Delimited
 code</Code>
+  </P>
   <P>
     asdf
   </P>
-  <Code>Formatted
+  <P>
+    <Code>Formatted
 code</Code>
+  </P>
 </Document>
 };
 

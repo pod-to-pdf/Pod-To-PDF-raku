@@ -475,7 +475,7 @@ multi method pod2pdf(Pod::Item $pod) {
                 my constant BulletPoints = ("\c[BULLET]",
                                             "\c[WHITE BULLET]",
                                             '-');
-                my $bp = BulletPoints[$list-level - 1];
+                my Str $bp = BulletPoints[$list-level - 1];
                 self!style: :tag(Label), {
                     $.print: $bp;
                 }
@@ -492,7 +492,7 @@ multi method pod2pdf(Pod::Item $pod) {
 }
 
 multi method pod2pdf(Pod::Block::Code $pod) {
-    $.pad: {
+    self!style: :pad, :tag(Paragraph), {
         self!code: pod2text-code($pod);
     }
 }

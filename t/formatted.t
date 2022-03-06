@@ -77,6 +77,8 @@ This text contains a link to L<http://www.google.com/>.
 
 This text contains a link with label to L<google|http://www.google.com/>.
 
+=comment a real-world sample, taken from Supply.pod6
+
 A tap on an C<on demand> supply will initiate the production of values, and
 tapping the supply again may result in a new set of values. For example,
 C<Supply.interval> produces a fresh timer with the appropriate interval each

@@ -51,7 +51,7 @@ subtest 'document structure', {
     is $tags[0].Str(:omit<Span>), $xml, 'PDF Structure is correct';
 }
 
-## Example taken from docs.raku.org/language/pod#Declarator_blocks
+=comment Example taken from docs.raku.org/language/pod#Declarator_blocks
 
 #| Base class for magicians 
 class Magician {
