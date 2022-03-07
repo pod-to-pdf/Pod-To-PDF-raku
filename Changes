@@ -1,6 +1,8 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+    - Revised handling of uppercase =TITLE =AUTHOR, etc. These are
+      now rendered  https://design.raku.org/S26.html#Semantic_blocks
 
 0.0.8  2022-03-04T08:42:00+13:00
     - Handle nested named blocks as sub-sections

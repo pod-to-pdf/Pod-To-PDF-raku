@@ -1,10 +1,12 @@
 TITLE
 =====
 
-Pod::To::PDF - Render Pod to PDF via Cairo
+Pod::To::PDF
 
-Pod::To::PDF - Render Pod to PDF via Cairo
-==========================================
+SUBTITLE
+========
+
+Render Pod to PDF via Cairo
 
 Usage
 =====

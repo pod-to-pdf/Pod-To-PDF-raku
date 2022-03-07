@@ -376,7 +376,7 @@ method !gen-dest-name($title, $seq = '') {
     }
 }
 
-method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
+method !heading(Str:D $Title, Level :$level = $!level, :$underline = $level == 1, Bool :$toc = True) {
     my constant HeadingSizes = 20, 16, 13, 11.5, 10, 10;
     my $font-size = HeadingSizes[$level - 1];
     my Bool $bold   = $level <= 4;
@@ -399,7 +399,8 @@ method !heading(Str:D $Title, Level :$level = 2, :$underline = $level == 1) {
             $.say($Title);
         }
 
-        self.add-toc-entry: $Title, :dest($name), :$level;
+        self.add-toc-entry: $Title, :dest($name), :$level
+            if $toc;
     }
 }
 
@@ -451,15 +452,29 @@ multi method pod2pdf(Pod::Block::Named $pod) {
                     $.pod2pdf: $pod.contents;
                 }
             }
-            when 'TITLE'|'VERSION'|'SUBTITLE'|'NAME'|'AUTHOR'|'VERSION' {
-                self.metadata(.lc) ||= pod2text-inline($pod.contents);
+            when 'TITLE'|'SUBTITLE' {
+                $.pad(0);
+                temp $!level = $_ eq 'TITLE' ?? 1 !! 2;
+                my $toc = $_ eq 'TITLE';
+                my $title = pod2text-inline($pod.contents);
+                self.metadata(.lc) ||= $title;
+                self!heading($title, :$toc);
             }
             default {
-                warn "unrecognised POD named block: $_"
-                    if $_ eq .uc|.lc;
+                my $name = $_;
                 $!ctx.tag: Section, {
                     temp $!level += 1;
-                    self!heading($pod.name, :$!level);
+                    given $name {
+                        when .uc {
+                            when 'VERSION'|'NAME'|'AUTHOR' {
+                                self.metadata(.lc) ||= pod2text-inline($pod.contents);
+                            }
+                            $!level = 2;
+                            $_ = .tclc;
+                        }
+                    }
+                    
+                    self!heading($name);
                     $.pod2pdf($pod.contents);
                 }
             }

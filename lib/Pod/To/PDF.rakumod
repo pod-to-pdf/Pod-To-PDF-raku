@@ -101,8 +101,8 @@ multi method metadata(PodMetaType $t) is rw {
 multi method metadata { %!metadata.clone }
 
 =begin pod
-=TITLE Pod::To::PDF - Render Pod to PDF via Cairo
-=head1 Pod::To::PDF - Render Pod to PDF via Cairo
+=TITLE Pod::To::PDF
+=SUBTITLE  Render Pod to PDF via Cairo
 
 =begin Usage
 
