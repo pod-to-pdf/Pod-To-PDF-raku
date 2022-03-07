@@ -1,6 +1,8 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+
+0.0.9  2022-03-07T13:55:04+13:00
     - Revised handling of uppercase =TITLE =AUTHOR, etc. These are
       now rendered  https://design.raku.org/S26.html#Semantic_blocks
 
