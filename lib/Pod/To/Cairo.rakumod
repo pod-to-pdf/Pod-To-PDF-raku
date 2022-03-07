@@ -24,8 +24,29 @@ has Bool $.contents = True;
 has Bool $.verbose;
 has Bool $!blank-page = True;
 has UInt:D $!level = 1;
+has Str @!tags;
 
-enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Paragraph<P>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
+method !tag-begin($tag) {
+    note ('  ' x @!tags) ~ "<$tag>"
+        if $!verbose;
+    $!ctx.tag_begin($tag);
+    @!tags.push: $tag;
+}
+
+method !tag-end {
+    my Str:D $tag = @!tags.pop;
+    note ('  ' x @!tags) ~ "</$tag>"
+        if $!verbose;
+    $!ctx.tag_end($tag);
+}
+
+method !tag($tag, &codez) {
+    self!tag-begin($tag);
+    &codez();
+    self!tag-end;
+}
+
+enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Paragraph<P>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
 has Cairo::Surface:D $.surface is required handles <width height>;
 has $!width  = $!surface.width;
@@ -36,9 +57,12 @@ has $!tx = $!margin; # text-flow x
 has $!ty = $!margin + self.font-size; # text-flow y
 
 method read($pod) {
-    $!ctx.tag: Document, {
+    self!tag: Document, {
         self.pod2pdf($pod);
         self!finish-page;
+        self!want-level(1);
+        warn "problem closing tags: @!tags"
+            unless @!tags == 1;
     }
 }
 
@@ -95,9 +119,20 @@ method !style(&codez, Int :$indent, Str :tag($name), Bool :$pad, |c) {
     temp $!indent;
     $!indent += $indent if $indent;
     $.pad if $pad;
-    my $rv := $name ?? self!ctx.tag($name, &codez) !! &codez();
+    my $rv := $name ?? self!tag($name, &codez) !! &codez();
     $.pad if $pad;
     $rv;
+}
+
+method !want-level($level) {
+    while $!level < $level {
+        self!tag-begin(Section);
+        $!level++;
+    }
+    while $!level > $level && @!tags.tail eq Section {
+        self!tag-end;
+        $!level--;
+    }
 }
 
 method !height-remaining {
@@ -260,7 +295,7 @@ my constant hpad = 10;
 
 method !table-row(@row, @widths, Bool :$header) {
     if +@row -> \cols {
-        $!ctx.tag: TableRow, {
+        self!tag: TableRow, {
             my @overflow;
             # simple fixed column widths, for now
             self!ctx;
@@ -276,7 +311,7 @@ method !table-row(@row, @widths, Bool :$header) {
                     if $tb.content-width > $width || $tb.content-height > $height {
                         $tb .= clone: :$width, :$height;
                     }
-                    $!ctx.tag: $cell-tag, {
+                    self!tag: $cell-tag, {
                         $tb.print: :$!ctx, :x($tab), :y($!ty);
                         if $header {
                             # draw underline
@@ -337,7 +372,7 @@ multi method pod2pdf(Pod::Block::Table $pod) {
     my @widths = self!build-table: $pod, my @table;
 
     self!style: :lines-before(3), :pad, {
-        $!ctx.tag: Table, {
+        self!tag: Table, {
             if $pod.caption -> $caption {
                 self!style: :tag(Caption), :italic, {
                     $.say: $caption;
@@ -346,13 +381,13 @@ multi method pod2pdf(Pod::Block::Table $pod) {
             self!pad-here;
             my @header = @table.shift.List;
             if @header {
-                $!ctx.tag: TableHead, {
+                self!tag: TableHead, {
                     self!table-row: @header, @widths, :header;
                 }
             }
 
             if @table {
-                 $!ctx.tag: TableBody, {
+                 self!tag: TableBody, {
                      for @table {
                          my @row = .List;
                          if @row {
@@ -376,7 +411,7 @@ method !gen-dest-name($title, $seq = '') {
     }
 }
 
-method !heading(Str:D $Title, Level :$level = $!level, :$underline = $level == 1, Bool :$toc = True) {
+method !heading(Str:D $Title, Level:D :$level!, :$underline = $level == 1, Bool :$toc = True) {
     my constant HeadingSizes = 20, 16, 13, 11.5, 10, 10;
     my $font-size = HeadingSizes[$level - 1];
     my Bool $bold   = $level <= 4;
@@ -390,7 +425,8 @@ method !heading(Str:D $Title, Level :$level = $!level, :$underline = $level == 1
         when 5 { $italic = True; }
     }
 
-    my $tag = $level == $!level ?? 'H' !! 'H' ~ $level;
+    self!want-level($level);
+    my $tag = $level == $!level ?? Header !! 'H' ~ $level;
     self!style: :$tag, :$font-size, :$bold, :$italic, :$underline, :$lines-before, {
 
         my Str:D $name = self!gen-dest-name($Title);
@@ -454,29 +490,28 @@ multi method pod2pdf(Pod::Block::Named $pod) {
             }
             when 'TITLE'|'SUBTITLE' {
                 $.pad(0);
-                temp $!level = $_ eq 'TITLE' ?? 1 !! 2;
                 my $toc = $_ eq 'TITLE';
+                my $level = $toc ?? 1 !! 2;
                 my $title = pod2text-inline($pod.contents);
                 self.metadata(.lc) ||= $title;
-                self!heading($title, :$toc);
+                self!heading($title, :$toc, :$level);
             }
             default {
                 my $name = $_;
-                $!ctx.tag: Section, {
-                    temp $!level += 1;
-                    given $name {
-                        when .uc {
-                            when 'VERSION'|'NAME'|'AUTHOR' {
-                                self.metadata(.lc) ||= pod2text-inline($pod.contents);
-                            }
-                            $!level = 2;
-                            $_ = .tclc;
+                my $level = $!level + 1;
+                given $name {
+                    when .uc {
+                        when 'VERSION'|'NAME'|'AUTHOR' {
+                            self.metadata(.lc) ||= pod2text-inline($pod.contents);
                         }
+                        $level = 2;
+                        $_ = .tclc;
                     }
-                    
-                    self!heading($name);
-                    $.pod2pdf($pod.contents);
                 }
+                
+                self!heading($name, :$level);
+                $.pod2pdf($pod.contents);
+                self!want-level($level - 1);
             }
         }
     }
@@ -674,7 +709,9 @@ multi method pod2pdf(Pod::Block::Declarator $pod) {
         }
 
         if $code {
-            $.pad: { self!code($decl ~ ' ' ~ $code) };
+            self!style: :pad, :tag(Paragraph), {
+                self!code($decl ~ ' ' ~ $code);
+            };
         }
 
         if $pod.trailing -> $trailing {

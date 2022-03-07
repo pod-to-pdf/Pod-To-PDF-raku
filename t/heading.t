@@ -24,36 +24,46 @@ my $xml = q{<Document>
   <P>
     asdf
   </P>
-  <H2>
-    Subheading2
-  </H2>
+  <Sect>
+    <H>
+      Subheading2
+    </H>
+  </Sect>
   <H>
     Delimited heading1
   </H>
-  <H3>
-    Heading3
-  </H3>
-  <P>
-    asdf
-  </P>
-  <H2>
-    Head2
-  </H2>
-  <P>
-    asdf
-  </P>
-  <H3>
-    Head3
-  </H3>
-  <P>
-    asdf
-  </P>
-  <H4>
-    Head4
-  </H4>
-  <P>
-    asdf
-  </P>
+  <Sect>
+    <Sect>
+      <H>
+        Heading3
+      </H>
+      <P>
+        asdf
+      </P>
+    </Sect>
+    <H>
+      Head2
+    </H>
+    <P>
+      asdf
+    </P>
+    <Sect>
+      <H>
+        Head3
+      </H>
+      <P>
+        asdf
+      </P>
+      <Sect>
+        <H>
+          Head4
+        </H>
+        <P>
+          asdf
+        </P>
+      </Sect>
+    </Sect>
+  </Sect>
 </Document>
 };
 
