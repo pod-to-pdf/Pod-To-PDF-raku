@@ -22,6 +22,8 @@ my $xml = q{<Document>
     <P>
       <Code>class Magician</Code>
     </P>
+  </Sect>
+  <Sect>
     <Sect>
       <H>
         Sub duel
@@ -67,7 +69,7 @@ class Magician {
   has Str @.spells;
 }
  
-#| Fight mechanics 
+#| Fight mechanics
 sub duel(Magician $a, Magician $b) {
 }
 #= Magicians only, no mortals. 

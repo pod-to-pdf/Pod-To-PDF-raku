@@ -26,26 +26,6 @@ has Bool $!blank-page = True;
 has UInt:D $!level = 1;
 has Str @!tags;
 
-method !tag-begin($tag) {
-    note ('  ' x @!tags) ~ "<$tag>"
-        if $!verbose;
-    $!ctx.tag_begin($tag);
-    @!tags.push: $tag;
-}
-
-method !tag-end {
-    my Str:D $tag = @!tags.pop;
-    note ('  ' x @!tags) ~ "</$tag>"
-        if $!verbose;
-    $!ctx.tag_end($tag);
-}
-
-method !tag($tag, &codez) {
-    self!tag-begin($tag);
-    &codez();
-    self!tag-end;
-}
-
 enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Paragraph<P>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
 has Cairo::Surface:D $.surface is required handles <width height>;
@@ -56,13 +36,38 @@ has Pod::To::Cairo::Style $.style handles<font font-size leading line-height bol
 has $!tx = $!margin; # text-flow x
 has $!ty = $!margin + self.font-size; # text-flow y
 
+method !tag-begin($tag) {
+    $!ctx.tag_begin($tag);
+    @!tags.push: $tag;
+}
+
+method !tag-end {
+    my Str:D $tag = @!tags.pop;
+    $!ctx.tag_end($tag);
+}
+
+method !tag($tag, &codez) {
+    self!tag-begin($tag);
+    &codez();
+    self!tag-end;
+}
+
+method !want-level($level) {
+    while $!level < $level {
+        self!tag-begin(Section);
+        $!level++;
+    }
+    while $!level > $level && @!tags.tail eq Section {
+        self!tag-end;
+        $!level--;
+    }
+}
+
 method read($pod) {
     self!tag: Document, {
         self.pod2pdf($pod);
         self!finish-page;
         self!want-level(1);
-        warn "problem closing tags: @!tags"
-            unless @!tags == 1;
     }
 }
 
@@ -122,17 +127,6 @@ method !style(&codez, Int :$indent, Str :tag($name), Bool :$pad, |c) {
     my $rv := $name ?? self!tag($name, &codez) !! &codez();
     $.pad if $pad;
     $rv;
-}
-
-method !want-level($level) {
-    while $!level < $level {
-        self!tag-begin(Section);
-        $!level++;
-    }
-    while $!level > $level && @!tags.tail eq Section {
-        self!tag-end;
-        $!level--;
-    }
 }
 
 method !height-remaining {
@@ -720,6 +714,8 @@ multi method pod2pdf(Pod::Block::Declarator $pod) {
                 $.pod2pdf($trailing);
             }
         }
+
+        self!want-level($level - 1);
     }
 }
 
