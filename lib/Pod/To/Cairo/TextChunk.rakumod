@@ -64,6 +64,7 @@ method layout(
     my int @nls = $!text.indices: "\n";
     my int $n = $shaper.elems;
     $!glyphs .= new: :elems($n - +@nls);
+    @nls.push: -1;
     my Cairo::cairo_glyph_t $cairo-glyph;
     my Num $x = $!x.Num + $!start.re;
     my Num $y = $!y.Num + $!start.im;

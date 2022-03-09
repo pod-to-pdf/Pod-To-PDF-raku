@@ -1,6 +1,7 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+    - Fix potential crash in PDF::Cairo::TextChunk
 
 0.0.10  2022-03-09T05:45:32+13:00
     - Organize tagged content into sections.
