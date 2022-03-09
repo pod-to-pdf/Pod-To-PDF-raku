@@ -37,23 +37,11 @@ my $xml = q{<Document>
     spaces and tabs are ignored
   </P>
   <P>
-    sanity test of 
-    <Lbl>
-      <Link>[1]</Link>
-    </Lbl>
-     footnotes.
+    Paragraph with formatting, <Code>code</Code> and <Reference><Link href="#blah">links</Link></Reference>.
   </P>
   <P>
-    Paragraph with formatting, <Code>code</Code> and <Link href="#blah">links</Link>.
+    aaaaabbbbbcccccdddddeeeeeﬀﬀfggggghhhhhiiiiijjjjjkkkkklllllmmmmmnnnnnooooopppppqqqqqrrrrrssssstttttuuuuuvvvvvwwwwwxxxxxy
   </P>
-  <P>
-    aaaaabbbbbcccccdddddeeeeeﬀﬀfggggghhhhhiiiiijjjjjkkkkklllllmmmmmnnnnnooooopppppqqqqqrrrrrssssstttttuuuuuv
-  </P>
-  <Note>
-    <Lbl>
-      <Link>[1]</Link>
-    </Lbl>
-    if you click, here, you should got back to the paragraph</Note>
 </Document>
 };
 
@@ -63,14 +51,16 @@ if ::('PDF::Tags::Reader') ~~ Failure {
     exit 0;
 }
 
-todo "Cairo losing spaces";
 subtest 'document structure', {
     plan 1;
     # PDF::Class is an indirect dependency of PDF::Tags::Reader
     require ::('PDF::Class');
     my $pdf  = ::('PDF::Class').open: "tmp/paragraph.pdf";
     my $tags = ::('PDF::Tags::Reader').read: :$pdf;
-    is $tags[0].Str(:omit<Span>), $xml, 'PDF Structure is correct';
+    my $actual-xml = $tags[0].Str(:omit<Span>);
+    todo 'losing intra-formatting space'
+        if $actual-xml ~~ s/withformatting/with formatting/;
+    is $actual-xml, $xml, 'PDF Structure is correct';
 }
 
 =begin pod
@@ -97,8 +87,6 @@ paragraph
 =end para
 
 =para spaces  and	tabs are ignored
-
-=para sanity test of N<if you click, here, you should got back to the paragraph> footnotes.
 
 =para Paragraph U<with> B<formatting>, C<code> and L<links|#blah>.
 

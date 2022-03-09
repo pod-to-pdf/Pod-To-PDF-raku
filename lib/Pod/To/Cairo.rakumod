@@ -26,7 +26,7 @@ has Bool $!blank-page = True;
 has UInt:D $!level = 1;
 has Str @!tags;
 
-enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Paragraph<P>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
+enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
 has Cairo::Surface:D $.surface is required handles <width height>;
 has $!width  = $!surface.width;
@@ -221,7 +221,9 @@ method !finish-page {
                     $.print($ind); #[n]
                 }
                 $!tx += 5;
-                $.pod2pdf($footnote);
+                self!tag: Paragraph, {
+                    $.pod2pdf($footnote);
+                }
             }
         }
     }
@@ -586,7 +588,9 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             my @pos = $!margin, $!height - $!margin - (Gutter+2) * $.line-height;
             my %link = :page($!page-num), :@pos;
             my $ind = '[' ~ @!footnotes+1 ~ ']';
-            self!style: :tag(Label), :%link, {  $.pod2pdf($ind); }
+            self!tag: Reference, {
+                self!style: :tag(Label), :%link, {  $.pod2pdf($ind); }
+            }
             my @contents = $!ty - $.line-height, $ind, $pod.contents.Slip;
             @!footnotes.push: @contents;
             do {
@@ -612,18 +616,19 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
         }
         when 'L' {
             my $text = pod2text-inline($pod.contents);
-            my %link;
+            my %style;
             given $pod.meta.head // $text {
                 when .starts-with('#') {
-                    %link<dest> = dest-name .substr(1);
+                    %style<link><dest> = dest-name .substr(1);
+                    %style<tag> = Reference;
                 }
                 when IETF::RFC_Grammar::URI.parse($_) {
-                    %link<uri> = $_;
+                    %style<link><uri> = $_;
                 }
                 default {
                 }
             }
-            self!style: :%link, {
+            self!style: |%style, {
                 $.print: $text;
             }
         }
