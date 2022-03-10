@@ -1,6 +1,8 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+    - Encode Link URIs to ASCII subset. As described in Cairo doco
+      https://www.cairographics.org/manual/cairo-Tags-and-Links.html#uri-link
 
 0.0.11  2022-03-10T08:31:25+13:00
     - Fix potential crash in PDF::Cairo::TextChunk

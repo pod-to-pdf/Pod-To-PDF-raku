@@ -558,6 +558,10 @@ multi method pod2pdf(Pod::Block::Para $pod) {
     }
 }
 
+sub uri-to-ascii($s) {
+    $s.subst: rx/<- [\x0 .. \x7f]>/, { .Str.encode.list.fmt('%%%X', "") }, :g
+}
+
 multi method pod2pdf(Pod::FormattingCode $pod) {
     given $pod.type {
         when 'B' {
@@ -623,7 +627,8 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                     %style<tag> = Reference;
                 }
                 when IETF::RFC_Grammar::URI.parse($_) {
-                    %style<link><uri> = $_;
+                    my $uri = uri-to-ascii($_);
+                    %style<link><uri> = $uri;
                 }
                 default {
                 }
