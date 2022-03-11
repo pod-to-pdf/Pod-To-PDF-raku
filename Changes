@@ -1,11 +1,14 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+
+0.0.12  2022-03-12T08:43:40+13:00
     - Encode Link URIs to ASCII subset. As described in Cairo documentation
       https://www.cairographics.org/manual/cairo-Tags-and-Links.html#uri-link
     - Add Pod::To::Cairo::Linker - override-able base class for handling links
     - Revert organizing tagged content into sections. Use simple H1 .. Hn
       tagging is recommended in PDF Association's tagged PDF best practices.
+    - Improve handling of skipped header levels in table-of-contents
 
 0.0.11  2022-03-10T08:31:25+13:00
     - Fix potential crash in PDF::Cairo::TextChunk

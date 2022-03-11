@@ -483,16 +483,14 @@ multi method pod2pdf(Pod::Block::Named $pod) {
             default {
                 my $name = $_;
                 temp $!level += 1;
-                given $name {
-                    when .uc {
-                        when 'VERSION'|'NAME'|'AUTHOR' {
-                            self.metadata(.lc) ||= pod2text-inline($pod.contents);
-                        }
-                        $!level = 2;
-                        $_ = .tclc;
+               if $name eq $name.uc {
+                    if $name ~~ 'VERSION'|'NAME'|'AUTHOR' {
+                        self.metadata(.lc) ||= pod2text-inline($pod.contents);
                     }
+                    $!level = 2;
+                    $name = .tclc;
                 }
-                
+
                 self!heading($name);
                 $.pod2pdf($pod.contents);
             }

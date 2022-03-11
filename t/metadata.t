@@ -20,9 +20,9 @@ my $xml = q{<Document>
   <H2>
     Subtitle from POD
   </H2>
-  <H3>
-    VERSION
-  </H3>
+  <H2>
+    Version
+  </H2>
   <P>
     1.2.3
   </P>
