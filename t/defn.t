@@ -15,11 +15,15 @@ my $xml = q{<Document>
   <H2>
     pod2pdf() Options
   </H2>
-  Str() :$pdf-ﬁle
+  <Lbl>
+    Str() :$pdf-ﬁle
+  </Lbl>
   <P>
     A ﬁlename for the output PDF ﬁle.
   </P>
-  Cairo::Surface::PDF :$surface
+  <Lbl>
+    Cairo::Surface::PDF :$surface
+  </Lbl>
   <P>
     A surface to render to
   </P>

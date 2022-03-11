@@ -2,12 +2,11 @@ unit class Pod::To::Cairo;
 
 use Pod::To::Cairo::Style;
 use Pod::To::Cairo::TextChunk;
+use Pod::To::Cairo::Linker;
 use HarfBuzz::Font::Cairo;
 use Cairo;
 use FontConfig;
 use Pod::To::Text;
-use IETF::RFC_Grammar::URI;
-use URI;
 
 subset Level where 0..6;
 my constant Gutter = 1;
@@ -26,21 +25,7 @@ has Bool $.verbose;
 has Bool $!blank-page = True;
 has UInt:D $!level = 1;
 has Str @!tags;
-class DefaultResolver {
-    method resolve-link(Str $link) {
-        if IETF::RFC_Grammar::URI.parse($link) {
-            my URI() $uri = $link;
-            if $uri.is-relative && $uri.path.segments.tail && ! $uri.path.segments.tail.contains('.') {
-                $uri.path($uri.path ~ '.pdf');
-            }
-            $uri.Str;
-        }
-        else {
-            Str
-        }
-    }
-}
-has $.resolver = DefaultResolver;
+has $.linker = Pod::To::Cairo::Linker;
 
 enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
@@ -417,6 +402,7 @@ method !heading(Str:D $Title, Level:D :$level = $!level, :$underline = $level <=
     my Bool $bold   = $level <= 4;
     my Bool $italic;
     my $lines-before = $.lines-before;
+
     given $level {
         when 1   { self!new-page; }
         when 2   { $lines-before = 3; }
@@ -628,7 +614,7 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                     %style<tag> = Reference;
                 }
                 else {
-                    with $!resolver.resolve-link($_) -> $uri {
+                    with $!linker.resolve-link($_) -> $uri {
                         %style<link><uri> = uri-to-ascii $uri;
                     }
                 }
@@ -646,7 +632,7 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
 
 multi method pod2pdf(Pod::Defn $pod) {
     $.pad;
-    self!style: :bold, {
+    self!style: :bold, :tag(Label), {
         $.pod2pdf($pod.term);
     }
     $.pod2pdf($pod.contents);

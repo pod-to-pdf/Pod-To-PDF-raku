@@ -198,10 +198,10 @@ only C<=TITLE> and C<=AUTHOR> are directly supported in PDF metadata.
 =defn `:!contents`
 Disables Table of Contents generation.
 
-=defn `:&resolve-link
-Provides a subroutine to intercept and rewrite links. It accepts the
-link URL as a string and returns a possibly modified URL. The link is
-skipped, if the subroutine returns an undefined value.
+=defn `:$linker
+Provides a class or object to intercept and sanitise or rebase links. The class/object
+should provide a method `resolve-link` that accepts the target component
+of C<L<>> formatting codes and returns the actual link to be embedded in the PDF. The link is omitted, if the method returns an undefined value.
 
 
 =end Subroutines
