@@ -111,6 +111,10 @@ Note: All of these are options are provided for compatibility, however only `=TI
 
 Disables Table of Contents generation.
 
+**`:&resolve-link**
+
+Provides a subroutine to intercept and rewrite links. It accepts the link URL as a string and returns a possibly modified URL. The link is skipped, if the subroutine returns an undefined value.
+
 Installation
 ============
 

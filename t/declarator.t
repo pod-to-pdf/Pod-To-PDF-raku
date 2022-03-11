@@ -12,36 +12,30 @@ my Cairo::Surface $pdf = pod2pdf($=pod, :$pdf-file);
 lives-ok {$pdf.finish}
 
 my $xml = q{<Document>
-  <Sect>
-    <H>
-      Class Magician
-    </H>
-    <P>
-      Base class for magicians
-    </P>
-    <P>
-      <Code>class Magician</Code>
-    </P>
-  </Sect>
-  <Sect>
-    <Sect>
-      <H>
-        Sub duel
-      </H>
-      <P>
-        Fight mechanics
-      </P>
-      <P>
-        <Code>sub duel(
+  <H2>
+    Class Magician
+  </H2>
+  <P>
+    Base class for magicians
+  </P>
+  <P>
+    <Code>class Magician</Code>
+  </P>
+  <H3>
+    Sub duel
+  </H3>
+  <P>
+    Fight mechanics
+  </P>
+  <P>
+    <Code>sub duel(
     Magician $a,
     Magician $b,
 )</Code>
-      </P>
-      <P>
-        Magicians only, no mortals.
-      </P>
-    </Sect>
-  </Sect>
+  </P>
+  <P>
+    Magicians only, no mortals.
+  </P>
 </Document>
 };
 

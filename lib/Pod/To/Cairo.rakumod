@@ -7,8 +7,9 @@ use Cairo;
 use FontConfig;
 use Pod::To::Text;
 use IETF::RFC_Grammar::URI;
+use URI;
 
-subset Level where 1..6;
+subset Level where 0..6;
 my constant Gutter = 1;
 
 has UInt $!indent = 0;
@@ -25,6 +26,21 @@ has Bool $.verbose;
 has Bool $!blank-page = True;
 has UInt:D $!level = 1;
 has Str @!tags;
+class DefaultResolver {
+    method resolve-link(Str $link) {
+        if IETF::RFC_Grammar::URI.parse($link) {
+            my URI() $uri = $link;
+            if $uri.is-relative && $uri.path.segments.tail && ! $uri.path.segments.tail.contains('.') {
+                $uri.path($uri.path ~ '.pdf');
+            }
+            $uri.Str;
+        }
+        else {
+            Str
+        }
+    }
+}
+has $.resolver = DefaultResolver;
 
 enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
@@ -52,22 +68,10 @@ method !tag($tag, &codez) {
     self!tag-end;
 }
 
-method !want-level($level) {
-    while $!level < $level {
-        self!tag-begin(Section);
-        $!level++;
-    }
-    while $!level > $level && @!tags.tail eq Section {
-        self!tag-end;
-        $!level--;
-    }
-}
-
 method read($pod) {
     self!tag: Document, {
         self.pod2pdf($pod);
         self!finish-page;
-        self!want-level(1);
     }
 }
 
@@ -407,22 +411,20 @@ method !gen-dest-name($title, $seq = '') {
     }
 }
 
-method !heading(Str:D $Title, Level:D :$level!, :$underline = $level == 1, Bool :$toc = True) {
-    my constant HeadingSizes = 20, 16, 13, 11.5, 10, 10;
-    my $font-size = HeadingSizes[$level - 1];
+method !heading(Str:D $Title, Level:D :$level = $!level, :$underline = $level <= 1, Bool :$toc = True) {
+    my constant HeadingSizes = 24, 20, 16, 13, 11.5, 10, 10;
+    my $font-size = HeadingSizes[$level];
     my Bool $bold   = $level <= 4;
     my Bool $italic;
     my $lines-before = $.lines-before;
-
     given $level {
-        when 1 { self!new-page; }
-        when 2 { $lines-before = 3; }
-        when 3 { $lines-before = 2; }
-        when 5 { $italic = True; }
+        when 1   { self!new-page; }
+        when 2   { $lines-before = 3; }
+        when 3   { $lines-before = 2; }
+        when 5   { $italic = True; }
     }
 
-    self!want-level($level);
-    my $tag = $level == $!level ?? Header !! 'H' ~ $level;
+    my $tag = 'H' ~ ($level||1);
     self!style: :$tag, :$font-size, :$bold, :$italic, :$underline, :$lines-before, {
 
         my Str:D $name = self!gen-dest-name($Title);
@@ -487,27 +489,26 @@ multi method pod2pdf(Pod::Block::Named $pod) {
             when 'TITLE'|'SUBTITLE' {
                 $.pad(0);
                 my $toc = $_ eq 'TITLE';
-                my $level = $toc ?? 1 !! 2;
+                $!level = $toc ?? 0 !! 2;
                 my $title = pod2text-inline($pod.contents);
                 self.metadata(.lc) ||= $title;
-                self!heading($title, :$toc, :$level);
+                self!heading($title, :$toc);
             }
             default {
                 my $name = $_;
-                my $level = $!level + 1;
+                temp $!level += 1;
                 given $name {
                     when .uc {
                         when 'VERSION'|'NAME'|'AUTHOR' {
                             self.metadata(.lc) ||= pod2text-inline($pod.contents);
                         }
-                        $level = 2;
+                        $!level = 2;
                         $_ = .tclc;
                     }
                 }
                 
-                self!heading($name, :$level);
+                self!heading($name);
                 $.pod2pdf($pod.contents);
-                self!want-level($level - 1);
             }
         }
     }
@@ -545,8 +546,8 @@ multi method pod2pdf(Pod::Block::Code $pod) {
 
 multi method pod2pdf(Pod::Heading $pod) {
     $.pad: {
-        my Level $level = min($pod.level, 6);
-        self!heading( pod2text-inline($pod.contents), :$level);
+        $!level = min($pod.level, 6);
+        self!heading( pod2text-inline($pod.contents));
     }
 }
 
@@ -622,15 +623,14 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             my $text = pod2text-inline($pod.contents);
             my %style;
             given $pod.meta.head // $text {
-                when .starts-with('#') {
+                if .starts-with('#') {
                     %style<link><dest> = dest-name .substr(1);
                     %style<tag> = Reference;
                 }
-                when IETF::RFC_Grammar::URI.parse($_) {
-                    my $uri = uri-to-ascii($_);
-                    %style<link><uri> = $uri;
-                }
-                default {
+                else {
+                    with $!resolver.resolve-link($_) -> $uri {
+                        %style<link><uri> = uri-to-ascii $uri;
+                    }
                 }
             }
             self!style: |%style, {
@@ -724,8 +724,6 @@ multi method pod2pdf(Pod::Block::Declarator $pod) {
                 $.pod2pdf($trailing);
             }
         }
-
-        self!want-level($level - 1);
     }
 }
 

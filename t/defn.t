@@ -12,19 +12,17 @@ my Cairo::Surface $pdf = pod2pdf($=pod, :$pdf-file);
 lives-ok {$pdf.finish}
 
 my $xml = q{<Document>
-  <Sect>
-    <H>
-      pod2pdf() Options
-    </H>
-    Str() :$pdf-ﬁle
-    <P>
-      A ﬁlename for the output PDF ﬁle.
-    </P>
-    Cairo::Surface::PDF :$surface
-    <P>
-      A surface to render to
-    </P>
-  </Sect>
+  <H2>
+    pod2pdf() Options
+  </H2>
+  Str() :$pdf-ﬁle
+  <P>
+    A ﬁlename for the output PDF ﬁle.
+  </P>
+  Cairo::Surface::PDF :$surface
+  <P>
+    A surface to render to
+  </P>
 </Document>
 };
 

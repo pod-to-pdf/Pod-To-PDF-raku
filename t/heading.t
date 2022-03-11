@@ -12,58 +12,48 @@ my Cairo::Surface $pdf = pod2pdf($=pod, :$pdf-file);
 lives-ok {$pdf.finish}
 
 my $xml = q{<Document>
-  <H>
+  <H1>
     Abbreviated heading1
-  </H>
+  </H1>
   <P>
     asdf
   </P>
-  <H>
+  <H1>
     Paragraph heading1
-  </H>
+  </H1>
   <P>
     asdf
   </P>
-  <Sect>
-    <H>
-      Subheading2
-    </H>
-  </Sect>
-  <H>
+  <H2>
+    Subheading2
+  </H2>
+  <H1>
     Delimited heading1
-  </H>
-  <Sect>
-    <Sect>
-      <H>
-        Heading3
-      </H>
-      <P>
-        asdf
-      </P>
-    </Sect>
-    <H>
-      Head2
-    </H>
-    <P>
-      asdf
-    </P>
-    <Sect>
-      <H>
-        Head3
-      </H>
-      <P>
-        asdf
-      </P>
-      <Sect>
-        <H>
-          Head4
-        </H>
-        <P>
-          asdf
-        </P>
-      </Sect>
-    </Sect>
-  </Sect>
+  </H1>
+  <H3>
+    Heading3
+  </H3>
+  <P>
+    asdf
+  </P>
+  <H2>
+    Head2
+  </H2>
+  <P>
+    asdf
+  </P>
+  <H3>
+    Head3
+  </H3>
+  <P>
+    asdf
+  </P>
+  <H4>
+    Head4
+  </H4>
+  <P>
+    asdf
+  </P>
 </Document>
 };
 

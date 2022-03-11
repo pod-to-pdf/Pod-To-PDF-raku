@@ -6,7 +6,7 @@ use Cairo;
 use File::Temp;
 
 has Str %!metadata;
-has int32 @!outline-stack;
+has int32 @!outline-path;
 
 submethod TWEAK(Str :$title, Str :$lang = 'en') {
     self.title = $_ with $title;
@@ -22,10 +22,11 @@ method render(
 ) {
     state %cache{Any};
     %cache{$pod}{$width~'x'~$height} //= do {
-        my Cairo::Surface::PDF $surface .= create($pdf-file, $width, $height);
+        my $out-file = $pdf-file // tempfile("POD6-****.pdf", :!unlink)[0];
+        my Cairo::Surface::PDF $surface .= create($out-file, $width, $height);
         $class.new(:$pod, :$surface, |c);
         $surface.finish;
-        $pdf-file;
+        $out-file;
     }
 }
 
@@ -42,19 +43,14 @@ our sub pod2pdf(
     $surface;
 }
 
-method add-toc-entry(Str:D $Title, Str :$dest!, UInt:D :$level! ) {
+method add-toc-entry(Str:D $Title, Str :$dest!, UInt:D :$level! is copy ) {
     my Str $name = $Title.subst(/\s+/, ' ', :g); # Tidy a little
-    @!outline-stack.pop while @!outline-stack >= $level;
-    my int32 $parent-id = $_ with @!outline-stack.tail;
-    while @!outline-stack < $level-1 {
-        # e.g. jump from =head1 to =head3
-        # need to insert missing entries
-        my $flags = CAIRO_PDF_OUTLINE_FLAG_OPEN;
-        $parent-id = $.surface.add_outline: :$parent-id, :$dest, :$flags;
-        @!outline-stack.push: $parent-id;
-    }
-    my uint32 $toc-id = $.surface.add_outline: :$parent-id, :$name, :$dest;
-    @!outline-stack.push: $toc-id;
+    $level++ unless $level;
+    @!outline-path.pop while @!outline-path >= $level;
+    @!outline-path.push: 0 while  @!outline-path < $level;
+    my int32 $parent-id = @!outline-path.reverse.first({$_}) || 0;
+    my int32 $toc-id = $.surface.add_outline: :$parent-id, :$name, :$dest;
+    @!outline-path[$level-1] = $toc-id;
 }
 
 subset PodMetaType of Str where 'title'|'subtitle'|'author'|'name'|'version';
@@ -201,6 +197,13 @@ only C<=TITLE> and C<=AUTHOR> are directly supported in PDF metadata.
 
 =defn `:!contents`
 Disables Table of Contents generation.
+
+=defn `:&resolve-link
+Provides a subroutine to intercept and rewrite links. It accepts the
+link URL as a string and returns a possibly modified URL. The link is
+skipped, if the subroutine returns an undefined value.
+
+
 =end Subroutines
 
 =begin Installation
