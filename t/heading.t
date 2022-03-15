@@ -13,6 +13,12 @@ lives-ok {$pdf.finish}
 
 my $xml = q{<Document>
   <H1>
+    Heading tests
+  </H1>
+  <H2>
+    for <Link href="pod::To::PDF">Pod::To::PDF</Link>
+  </H2>
+  <H1>
     Abbreviated heading1
   </H1>
   <P>
@@ -28,7 +34,12 @@ my $xml = q{<Document>
     Subheading2
   </H2>
   <H1>
-    Delimited heading1
+    <P>
+      Structured
+    </P>
+    <P>
+      heading1
+    </P>
   </H1>
   <H3>
     Heading3
@@ -54,6 +65,9 @@ my $xml = q{<Document>
   <P>
     asdf
   </P>
+  <H2>
+    Private methods
+  </H2>
 </Document>
 };
 
@@ -74,6 +88,9 @@ subtest 'document structure', {
 }
 
 =begin pod
+=TITLE Heading tests
+=SUBTITLE for L<Pod::To::PDF>
+
 =head1 Abbreviated heading1
 
 asdf
@@ -86,7 +103,7 @@ asdf
 =head2 Subheading2
 
 =begin head1
-Delimited
+Structured
 
 heading1
 =end head1
@@ -106,5 +123,7 @@ asdf
 =head4 Head4
 
 asdf
+
+=head2 X<Private methods|! (private methods);FQN>
 
 =end pod

@@ -18,13 +18,16 @@ method render(
     :$pdf-file = tempfile("POD6-****.pdf", :!unlink)[0],
     UInt:D :$width  = 612,
     UInt:D :$height = 792,
+    Bool :$index = True,
     |c,
 ) {
     state %cache{Any};
     %cache{$pod}{$width~'x'~$height} //= do {
         my $out-file = $pdf-file // tempfile("POD6-****.pdf", :!unlink)[0];
         my Cairo::Surface::PDF $surface .= create($out-file, $width, $height);
-        $class.new(:$pod, :$surface, |c);
+        my $obj = $class.new(:$pod, :$surface, |c);
+        $obj!build-index
+            if $index && $obj.index;
         $surface.finish;
         $out-file;
     }
@@ -37,19 +40,56 @@ our sub pod2pdf(
     UInt:D :$width  = 612,
     UInt:D :$height = 792,
     Cairo::Surface::PDF :$surface = Cairo::Surface::PDF.create($pdf-file, $width, $height);
+    Bool :$index = True,
     |c,
 ) is export {
-    $class.new(|c, :$pod, :$surface);
+    my $obj = $class.new(|c, :$pod, :$surface);
+    $obj!build-index
+        if $index && $obj.index;
     $surface;
 }
 
-method add-toc-entry(Str:D $Title, Str :$dest!, UInt:D :$level! is copy ) {
+sub categorize-alphabetically(%index) {
+    my %alpha-index;
+    for %index.sort(*.key.uc) {
+        %alpha-index{.key.substr(0,1).uc}{.key} = .value;
+    }
+    %alpha-index;
+}
+
+method !add-terms(%index, :$level is copy = 2) {
+    $level++;
+    my constant $flags = CAIRO_PDF_OUTLINE_FLAG_ITALIC;
+
+    for %index.sort(*.key.uc) {
+        my $term = .key;
+        my %kids = .value;
+        my Hash @refs = .List with %kids<#refs>:delete;
+        @refs[0] //= %();
+        for @refs -> %link {
+            self.add-toc-entry: $term, :$level, :$flags, |%link;
+            $term = ' ';
+        }
+
+        self!add-terms(%kids, :$level) if %kids;
+    }
+}
+
+method !build-index {
+    self.add-toc-entry('Index', :level(1));
+    my %idx := %.index;
+    %idx .= &categorize-alphabetically
+        if %idx > 64;
+    self!add-terms(%idx);
+}
+
+method add-toc-entry(Str:D $Title, UInt:D :$level! is copy, *%link ) {
     my Str $name = $Title.subst(/\s+/, ' ', :g); # Tidy a little
     $level++ unless $level;
     @!outline-path.pop while @!outline-path >= $level;
     @!outline-path.push: 0 while  @!outline-path < $level;
     my int32 $parent-id = @!outline-path.reverse.first({$_}) || 0;
-    my int32 $toc-id = $.surface.add_outline: :$parent-id, :$name, :$dest;
+    my int32 $toc-id = $.surface.add_outline: :$parent-id, :$name, |%link;
     @!outline-path[$level-1] = $toc-id;
 }
 
@@ -198,11 +238,13 @@ only C<=TITLE> and C<=AUTHOR> are directly supported in PDF metadata.
 =defn `:!contents`
 Disables Table of Contents generation.
 
-=defn `:$linker
+=defn `:!index`
+Disable writing of a `Index` section to the table of contents.
+
+=defn `:$linker`
 Provides a class or object to intercept and sanitise or rebase links. The class/object
 should provide a method `resolve-link` that accepts the target component
 of C<L<>> formatting codes and returns the actual link to be embedded in the PDF. The link is omitted, if the method returns an undefined value.
-
 
 =end Subroutines
 

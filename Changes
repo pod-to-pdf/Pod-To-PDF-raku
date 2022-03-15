@@ -1,6 +1,9 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+    - Handle 'rich-text' in headers, such as links or index entries
+    - Support indexing, by appending an 'Index' section to the table
+      of contents.
 
 0.0.12  2022-03-12T08:43:40+13:00
     - Encode Link URIs to ASCII subset. As described in Cairo documentation

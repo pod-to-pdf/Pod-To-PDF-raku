@@ -26,6 +26,7 @@ has Bool $!blank-page = True;
 has UInt:D $!level = 1;
 has Str @!tags;
 has $.linker = Pod::To::Cairo::Linker;
+has %.index;
 
 enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
@@ -396,7 +397,7 @@ method !gen-dest-name($title, $seq = '') {
     }
 }
 
-method !heading(Str:D $Title, Level:D :$level = $!level, :$underline = $level <= 1, Bool :$toc = True) {
+method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <= 1, Bool :$toc = True) {
     my constant HeadingSizes = 24, 20, 16, 13, 11.5, 10, 10;
     my $font-size = HeadingSizes[$level];
     my Bool $bold   = $level <= 4;
@@ -410,13 +411,17 @@ method !heading(Str:D $Title, Level:D :$level = $!level, :$underline = $level <=
         when 5   { $italic = True; }
     }
 
+    $pod .= &strip-para;
+
     my $tag = 'H' ~ ($level||1);
     self!style: :$tag, :$font-size, :$bold, :$italic, :$underline, :$lines-before, {
 
+        my $Title = pod2text-inline($pod);
         my Str:D $name = self!gen-dest-name($Title);
         self!pad-here;
         self!ctx.destination: :$name, {
-            $.say($Title);
+            $.pod2pdf($pod);
+            $.say;
         }
 
         self.add-toc-entry: $Title, :dest($name), :$level
@@ -476,9 +481,8 @@ multi method pod2pdf(Pod::Block::Named $pod) {
                 $.pad(0);
                 my $toc = $_ eq 'TITLE';
                 $!level = $toc ?? 0 !! 2;
-                my $title = pod2text-inline($pod.contents);
-                self.metadata(.lc) ||= $title;
-                self!heading($title, :$toc);
+                self.metadata(.lc) ||= pod2text-inline($pod.contents);
+                self!heading($pod.contents, :$toc);
             }
             default {
                 my $name = $_;
@@ -528,10 +532,19 @@ multi method pod2pdf(Pod::Block::Code $pod) {
     }
 }
 
+# to reduce the common case <Hn><P>Xxxx<P></Hn> -> <Hn>Xxxx</Hn>
+multi sub strip-para(List $_ where +$_ == 1) {
+    .map(&strip-para).List;
+}
+multi sub strip-para(Pod::Block::Para $_) {
+    .contents;
+}
+multi sub strip-para($_) { $_ }
+
 multi method pod2pdf(Pod::Heading $pod) {
     $.pad: {
         $!level = min($pod.level, 6);
-        self!heading( pod2text-inline($pod.contents));
+        self!heading: $pod.contents;
     }
 }
 
@@ -600,8 +613,34 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             # invisable
         }
         when 'X' {
-            warn "indexing (X) not yet handled";
-            $.pod2pdf($pod.contents);
+            my %link;
+            my $term = pod2text-inline($pod.contents);
+            if $term {
+                my Str:D $name = self!gen-dest-name('index-' ~ $term);
+                %link = :dest($name);
+                self!ctx.destination: :$name, {
+                    $.pod2pdf($pod.contents);
+                }
+            }
+            else {
+                # unamed term. link to the position on the page
+                $.pod2pdf($pod.contents);
+
+                my @pos = $!tx.round, ($!ty - $.line-height).round;
+                %link = :page($!page-num), :@pos;
+            }
+
+            if $pod.meta -> $meta {
+                for $meta.List {
+                    my $idx = %!index{.head} //= %();
+                    $idx = $idx{$_} //= %() for .skip;
+                    $idx<#refs>.push: %link;
+                }
+            }
+            elsif $term {
+                %!index{$term}<#refs>.push: %link;
+            }
+            # otherwise X<|> ?
         }
         when 'L' {
             my $text = pod2text-inline($pod.contents);
