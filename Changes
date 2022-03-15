@@ -1,7 +1,9 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
-    - Handle 'rich-text' in headers, such as links or index entries
+
+0.0.13  2022-03-16T09:11:33+13:00
+    - Handle 'rich-text' in headers, such as formatting, links or index entries
     - Support indexing, by appending an 'Index' section to the table
       of contents.
 

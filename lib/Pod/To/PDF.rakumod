@@ -1,5 +1,5 @@
 use Pod::To::Cairo;
-unit class Pod::To::PDF:ver<0.0.12>
+unit class Pod::To::PDF:ver<0.0.13>
     is Pod::To::Cairo;
 
 use Cairo;
@@ -57,7 +57,7 @@ sub categorize-alphabetically(%index) {
     %alpha-index;
 }
 
-method !add-terms(%index, :$level is copy = 2) {
+method !add-terms(%index, :$level is copy = 1) {
     $level++;
     my constant $flags = CAIRO_PDF_OUTLINE_FLAG_ITALIC;
 

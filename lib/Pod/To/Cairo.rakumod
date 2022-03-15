@@ -416,7 +416,7 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
     my $tag = 'H' ~ ($level||1);
     self!style: :$tag, :$font-size, :$bold, :$italic, :$underline, :$lines-before, {
 
-        my $Title = pod2text-inline($pod);
+        my Str $Title = pod2text-inline($pod);
         my Str:D $name = self!gen-dest-name($Title);
         self!pad-here;
         self!ctx.destination: :$name, {
