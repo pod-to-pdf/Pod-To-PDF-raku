@@ -27,7 +27,7 @@ foobar.pl
 =head2 SYNOPSIS
 =code foobar.pl <options> files ...
 
-my Cairo::Surface::PDF $pdf = pod2pdf($=pod);
+my Cairo::Surface::PDF $pdf = pod2pdf($=pod, :pdf-file<foobar.pdf>);
 $pdf.finish();
 ```
 

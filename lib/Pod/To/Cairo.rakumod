@@ -560,6 +560,22 @@ sub uri-to-ascii($s) {
     $s.subst: rx/<- [\x0 .. \x7f]>/, { .Str.encode.list.fmt('%%%X', "") }, :g
 }
 
+method !resolve-link(Str $url) {
+    my %style;
+    with $url {
+        if .starts-with('#') {
+            %style<link><dest> = dest-name .substr(1);
+            %style<tag> = Reference;
+        }
+        else {
+            with $!linker.resolve-link($_) -> $uri {
+                %style<link><uri> = uri-to-ascii $uri;
+            }
+        }
+    }
+    %style;
+}
+
 multi method pod2pdf(Pod::FormattingCode $pod) {
     given $pod.type {
         when 'B' {
@@ -647,20 +663,20 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
         }
         when 'L' {
             my $text = pod2text-inline($pod.contents);
-            my %style;
-            given $pod.meta.head // $text {
-                if .starts-with('#') {
-                    %style<link><dest> = dest-name .substr(1);
-                    %style<tag> = Reference;
-                }
-                else {
-                    with $!linker.resolve-link($_) -> $uri {
-                        %style<link><uri> = uri-to-ascii $uri;
-                    }
-                }
-            }
+            my %style = self!resolve-link: $pod.meta.head // $text;
             self!style: |%style, {
                 $.print: $text;
+            }
+        }
+        when 'P' {
+            # todo insertion of placed text
+            if pod2text-inline($pod.contents) -> $url {
+                my %style = self!resolve-link: $url;
+                $.pod2pdf('(see: ');
+                self!style: |%style, {
+                    $.print: $url;
+                }
+                $.pod2pdf(')');
             }
         }
         default {

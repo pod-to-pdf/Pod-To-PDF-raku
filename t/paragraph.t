@@ -40,6 +40,9 @@ my $xml = q{<Document>
     Paragraph with formatting, <Code>code</Code> and <Reference><Link href="#blah">links</Link></Reference>.
   </P>
   <P>
+    Paragraph with (see: <Link href="file:included.pod">ﬁle:included.pod</Link>) placement
+  </P>
+  <P>
     aaaaabbbbbcccccdddddeeeeeﬀﬀfggggghhhhhiiiiijjjjjkkkkklllllmmmmmnnnnnooooopppppqqqqqrrrrrssssstttttuuuuuvvvvvwwwwwxxxxxy
   </P>
 </Document>
@@ -89,6 +92,8 @@ paragraph
 =para spaces  and	tabs are ignored
 
 =para Paragraph U<with> B<formatting>, C<code> and L<links|#blah>.
+
+=para Paragraph with P<file:included.pod> placement
 
 =comment a single word that exceeds the line width
 
