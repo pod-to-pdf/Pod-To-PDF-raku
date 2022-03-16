@@ -28,7 +28,7 @@ has Str @!tags;
 has $.linker = Pod::To::Cairo::Linker;
 has %.index;
 
-enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
+enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Quote<Quote>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
 has Cairo::Surface:D $.surface is required handles <width height>;
 has $!width  = $!surface.width;
@@ -609,6 +609,9 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                 $.pod2pdf($pod.contents);
             }
         }
+        when 'E' {
+            $.pod2pdf($pod.contents);
+        }
         when 'Z' {
             # invisable
         }
@@ -668,11 +671,12 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
 }
 
 multi method pod2pdf(Pod::Defn $pod) {
-    $.pad;
-    self!style: :bold, :tag(Label), {
-        $.pod2pdf($pod.term);
+    self!tag: Paragraph, {
+        self!style: :bold, :tag(Quote), {
+            $.pod2pdf($pod.term);
+        }
     }
-    $.pod2pdf($pod.contents);
+    $.pod2pdf: $pod.contents;
 }
 
 multi method pod2pdf(Pod::Block::Declarator $pod) {

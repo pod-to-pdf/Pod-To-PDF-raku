@@ -192,19 +192,19 @@ sub pod2pdf(
 
 =head4 pod2pdf() Options
 
-=defn Str() :$pdf-file
+=defn `Str() :$pdf-file`
 A filename for the output PDF file.
 
-=defn Cairo::Surface::PDF :$surface
+=defn `Cairo::Surface::PDF :$surface`
 A surface to render to
 
-=defn UInt:D :$width, UInt:D :$height
+=defn `UInt:D :$width, UInt:D :$height`
 The page size in points (there are 72 points per inch).
 
-=defn UInt:D :$margin
+=defn `UInt:D :$margin`
 The page margin in points
 
-=defn Hash :@fonts
+=defn `Hash :@fonts`
 By default, Pod::To::PDF loads system fonts via FontConfig. This option can be used to preload selected fonts.
 =begin code :lang<raku>
 use Pod::To::PDF;
@@ -224,8 +224,7 @@ Each font entry should have a `file` entry and various
 combinations of `bold`, `italic` and `mono` flags. Note
 that `mono` is used to render code blocks and inline code.
 
-=defn Str :%metadata
-
+=defn `Str :%metadata`
 This can be used to preset values for C<title>, C<subtitle>,
 C<name>, C<author> or C<version>.
 

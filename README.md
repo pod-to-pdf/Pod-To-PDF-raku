@@ -60,23 +60,23 @@ sub pod2pdf(
 
 #### pod2pdf() Options
 
-**Str() :$pdf-file**
+**`Str() :$pdf-file`**
 
 A filename for the output PDF file.
 
-**Cairo::Surface::PDF :$surface**
+**`Cairo::Surface::PDF :$surface`**
 
 A surface to render to
 
-**UInt:D :$width, UInt:D :$height**
+**`UInt:D :$width, UInt:D :$height`**
 
 The page size in points (there are 72 points per inch).
 
-**UInt:D :$margin**
+**`UInt:D :$margin`**
 
 The page margin in points
 
-**Hash :@fonts**
+**`Hash :@fonts`**
 
 By default, Pod::To::PDF loads system fonts via FontConfig. This option can be used to preload selected fonts.
 
@@ -97,11 +97,9 @@ $pdf.finish();
 
 Each font entry should have a `file` entry and various combinations of `bold`, `italic` and `mono` flags. Note that `mono` is used to render code blocks and inline code.
 
-**Str :%metadata**
+**`Str :%metadata`**
 
-
-
-This can be used to preset values for `title`, `subtitle`, `name`, `author` or `version`.
+This can be used to preset values for C<title>, C<subtitle>, C<name>, C<author> or C<version>.
 
 This is an alternative to, and will override `=TITLE`, `=SUBTITLE`, `=NAME`, `=AUTHOR` or `=VERSION` directives.
 
