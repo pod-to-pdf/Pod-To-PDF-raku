@@ -1,8 +1,10 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+
+0.0.14  2022-03-17T12:07:00+13:00
     - Add fallback implementation of placement P<> links. They expand
-      to (see: <url>), rather than inserting the content
+      to "(see: <url>)", rather than inserting the content
 
 0.0.13  2022-03-16T09:11:33+13:00
     - Handle 'rich-text' in headers, such as formatting, links or index entries
