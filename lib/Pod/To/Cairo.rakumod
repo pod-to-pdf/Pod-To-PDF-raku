@@ -26,6 +26,7 @@ has Bool $!blank-page = True;
 has UInt:D $!level = 1;
 has Str @!tags;
 has $.linker = Pod::To::Cairo::Linker;
+has %.replace;
 has %.index;
 
 enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Quote<Quote>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
@@ -576,6 +577,7 @@ method !resolve-link(Str $url) {
     %style;
 }
 
+has %!replacing;
 multi method pod2pdf(Pod::FormattingCode $pod) {
     given $pod.type {
         when 'B' {
@@ -677,6 +679,21 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                     $.print: $url;
                 }
                 $.pod2pdf(')');
+            }
+        }
+        when 'R' {
+            if pod2text-inline($pod.contents) -> $place-holder {
+                if %!replace{$place-holder} -> $pod {
+                    if (temp %!replacing{$place-holder})++ {
+                        die "unable to recursively replace R\<$place-holder\>"
+                    }
+                    $.pod2pdf($pod);
+                }
+                else {
+                    note "replacement not specified for R\<$place-holder\>"
+                        if $!verbose;
+                    $.pod2pdf($pod.contents);
+                }
             }
         }
         default {
