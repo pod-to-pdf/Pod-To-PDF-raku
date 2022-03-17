@@ -398,7 +398,7 @@ method !gen-dest-name($title, $seq = '') {
     }
 }
 
-method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <= 1, Bool :$toc = True) {
+method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <= 1, Bool :$toc = True, :$!pad = 2) {
     my constant HeadingSizes = 24, 20, 16, 13, 11.5, 10, 10;
     my $font-size = HeadingSizes[$level];
     my Bool $bold   = $level <= 4;
@@ -419,10 +419,9 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
 
         my Str $Title = pod2text-inline($pod);
         my Str:D $name = self!gen-dest-name($Title);
-        self!pad-here;
+        self!pad-here; # ensure destination is correctly positioned
         self!ctx.destination: :$name, {
             $.pod2pdf($pod);
-            $.say;
         }
 
         self.add-toc-entry: $Title, :dest($name), :$level
@@ -479,11 +478,10 @@ multi method pod2pdf(Pod::Block::Named $pod) {
                 }
             }
             when 'TITLE'|'SUBTITLE' {
-                $.pad(0);
                 my $toc = $_ eq 'TITLE';
                 $!level = $toc ?? 0 !! 2;
                 self.metadata(.lc) ||= pod2text-inline($pod.contents);
-                self!heading($pod.contents, :$toc);
+                self!heading($pod.contents, :$toc, :pad(1));
             }
             default {
                 my $name = $_;
@@ -697,7 +695,7 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             }
         }
         default {
-            warn "todo: POD formatting code: $_";
+            warn "unhandled: POD formatting code: $_\<\>";
             $.pod2pdf($pod.contents);
         }
     }
@@ -824,11 +822,11 @@ multi method pod2pdf($pod) {
 }
 
 method !underline-position {
-    (self!curr-font.ft-face.underline-position // -100) * $.font-size / 1000;
+    (self!curr-font.ft-face.underline-position // -100) * $.font-size / 1250;
 }
 
 method !underline-thickness {
-    (self!curr-font.ft-face.underline-thickness // 50) * $.font-size / 1000;
+    (self!curr-font.ft-face.underline-thickness // 50) * $.font-size / 1250;
 }
 
 method !underline($tc, :$tab = self!indent, ) {

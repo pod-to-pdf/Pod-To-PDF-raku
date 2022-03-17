@@ -13,7 +13,7 @@ Usage
 
 From command line:
 
-$ raku --doc=PDF lib/to/class.rakumod | xargs evince
+    $ raku --doc=PDF lib/to/class.rakumod | xargs evince
 
 From Raku:
 
@@ -116,6 +116,30 @@ Disable writing of a `Index` section to the table of contents.
 **`:$linker`**
 
 Provides a class or object to intercept and sanitise or rebase links. The class/object should provide a method `resolve-link` that accepts the target component of C<L<>> formatting codes and returns the actual link to be embedded in the PDF. The link is omitted, if the method returns an undefined value.
+
+**`:%replace`**
+
+Specify replacements for `R<>` placeholders in the POD. Replacement values should be simple strings or Pod blocks (type `Pod::Block`). For example:
+
+```raku
+use Pod::To::PDF;
+my $title = 'Sample Title';
+my Str() $date = now.Date;
+my $author = 'David Warring';
+my $description = "sample Pod with replaced content";
+my %replace = :$date, :$title, :$author, :$description;
+.finish()
+    given pod2pdf($=pod, :%replace, :pdf-file<replace-example.pdf>);
+
+=begin pod
+=comment sample Pod with replaced content
+=TITLE R<title>
+=AUTHOR R<author>
+=DATE R<date>
+=head2 Description
+=para R<description>;
+=end pod
+```
 
 Installation
 ============
