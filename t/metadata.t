@@ -4,14 +4,15 @@ use Test;
 use Pod::To::PDF;
 use Cairo;
 
-plan 6;
+plan 7;
 
 mkdir "tmp";
 my $pdf-file = "tmp/metadata.pdf";
 my $width = 250;
 my $height = 350;
+my %replace = :author('David Warring'), :where<POD>;
 my Cairo::Surface::PDF $surface .= create($pdf-file, $width, $height);
-my Pod::To::PDF $pod .= new(:$=pod, :$surface,);
+my Pod::To::PDF $pod .= new(:$=pod, :$surface, :%replace);
 
 my $xml = q{<Document>
   <H1>
@@ -20,6 +21,12 @@ my $xml = q{<Document>
   <H2>
     Subtitle from POD
   </H2>
+  <H2>
+    Author
+  </H2>
+  <P>
+    David Warring
+  </P>
   <H2>
     Version
   </H2>
@@ -38,6 +45,7 @@ my $xml = q{<Document>
 is $pod.metadata('title'), 'Title from POD';
 is $pod.metadata('subtitle'), 'Subtitle from POD';
 is $pod.metadata('version'), '1.2.3';
+is $pod.metadata('author'), 'David Warring';
 
 lives-ok {$surface.finish}
 
@@ -68,9 +76,11 @@ subtest 'document structure', {
 
 =begin pod
 
-=TITLE Title from POD
+=TITLE Title from R<where>
 
-=SUBTITLE Subtitle from POD
+=SUBTITLE Subtitle from R<where>
+
+=AUTHOR R<author>
 
 =VERSION 1.2.3
 

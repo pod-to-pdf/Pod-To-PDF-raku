@@ -9,9 +9,9 @@ subtest 'new', {
     ok $style.italic;
     nok $style.bold;
     is $style.pattern.Str, 'serif:slant=100';
-    is $style.leading, 1.1;
+    is $style.leading, 1.15;
     is $style.font-size, 10;
-    is $style.line-height, 11;
+    is $style.line-height, 11.5;
 }
 
 $style .= clone: :bold, :font-size(12);
@@ -21,9 +21,9 @@ subtest 'clone', {
     ok $style.italic;
     ok $style.bold;
     is $style.pattern.Str, 'serif:slant=100:weight=200';
-    is $style.leading, 1.1;
+    is $style.leading, 1.15;
     is $style.font-size, 12;
-    is $style.line-height, 13.2;
+    is $style.line-height, 13.8;
 }
 
 $style .= new :mono;
