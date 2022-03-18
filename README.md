@@ -99,7 +99,7 @@ Each font entry should have a `file` entry and various combinations of `bold`, `
 
 **`Str :%metadata`**
 
-This can be used to preset values for C<title>, C<subtitle>, C<name>, C<author> or C<version>.
+This can be used to preset values for `title`, `subtitle`, `name`, `author` or `version`.
 
 This is an alternative to, and will override `=TITLE`, `=SUBTITLE`, `=NAME`, `=AUTHOR` or `=VERSION` directives.
 
@@ -119,7 +119,7 @@ Provides a class or object to intercept and sanitise or rebase links. The class/
 
 **`:%replace`**
 
-Specify replacements for `R<>` placeholders in the POD. Replacement values should be simple strings or Pod blocks (type `Pod::Block`). For example:
+Specify replacements for `R<>` placeholders in the POD. Replacement values should be simple strings (`Str`), Pod blocks (type `Pod::Block`), or a `List`. For example:
 
 ```raku
 use Pod::To::PDF;
@@ -128,8 +128,8 @@ my Str() $date = now.Date;
 my $author = 'David Warring';
 my $description = "sample Pod with replaced content";
 my %replace = :$date, :$title, :$author, :$description;
-.finish()
-    given pod2pdf($=pod, :%replace, :pdf-file<replace-example.pdf>);
+my $renderer = pod2pdf($=pod, :%replace, :pdf-file<replace-example.pdf>);
+$renderer.finish(); 
 
 =begin pod
 =comment sample Pod with replaced content

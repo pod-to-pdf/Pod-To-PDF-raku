@@ -1,6 +1,8 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+
+0.0.15  2022-03-19T07:16:02+13:00
     - Handle replacement formatting (R<>). Added :%replace option to
       podf2pdf().
     - Minor styling adjustments to padding, leading and underlines 

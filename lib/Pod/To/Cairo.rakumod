@@ -583,10 +583,10 @@ method !replace(Pod::FormattingCode $pod where .type eq 'R', &continue) {
          if %!replacing{$place-holder}++;
 
     my $new-pod = %!replace{$place-holder};
-    unless $new-pod {
+    without $new-pod {
         note "replacement not specified for R\<$place-holder\>"
            if $!verbose;
-        $new-pod = $pod.contents;
+        $_ = $pod.contents;
     }
 
     my $rv := &continue($new-pod);

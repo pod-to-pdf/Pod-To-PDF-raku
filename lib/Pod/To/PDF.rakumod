@@ -1,5 +1,5 @@
 use Pod::To::Cairo;
-unit class Pod::To::PDF:ver<0.0.14>
+unit class Pod::To::PDF:ver<0.0.15>
     is Pod::To::Cairo;
 
 use Cairo;
@@ -225,8 +225,8 @@ combinations of `bold`, `italic` and `mono` flags. Note
 that `mono` is used to render code blocks and inline code.
 
 =defn `Str :%metadata`
-This can be used to preset values for C<title>, C<subtitle>,
-C<name>, C<author> or C<version>.
+This can be used to preset values for `title`, `subtitle`,
+`name`, `author` or `version`.
 
 This is an alternative to, and will override C<=TITLE>, C<=SUBTITLE>,
 C<=NAME>, C<=AUTHOR> or C<=VERSION> directives.
@@ -247,7 +247,7 @@ of C<L<>> formatting codes and returns the actual link to be embedded in the PDF
 
 =defn `:%replace`
 Specify replacements for `R<>` placeholders in the POD. Replacement
-values should be simple strings or Pod blocks (type `Pod::Block`). For example:
+values should be simple strings (`Str`), Pod blocks (type `Pod::Block`), or a `List`. For example:
 
 =begin code :lang<raku>
 use Pod::To::PDF;
@@ -256,8 +256,8 @@ my Str() $date = now.Date;
 my $author = 'David Warring';
 my $description = "sample Pod with replaced content";
 my %replace = :$date, :$title, :$author, :$description;
-.finish()
-    given pod2pdf($=pod, :%replace, :pdf-file<replace-example.pdf>);
+my $renderer = pod2pdf($=pod, :%replace, :pdf-file<replace-example.pdf>);
+$renderer.finish(); 
 
 =begin pod
 =comment sample Pod with replaced content
