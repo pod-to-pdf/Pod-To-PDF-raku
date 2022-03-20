@@ -28,6 +28,7 @@ has Str @!tags;
 has $.linker = Pod::To::Cairo::Linker;
 has %.replace;
 has %.index;
+has $.tag = True;
 
 enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Quote<Quote>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
@@ -40,13 +41,17 @@ has $!tx = $!margin; # text-flow x
 has $!ty = $!margin + self.font-size; # text-flow y
 
 method !tag-begin($tag) {
-    $!ctx.tag_begin($tag);
-    @!tags.push: $tag;
+    if $!tag {
+        $!ctx.tag_begin($tag);
+        @!tags.push: $tag;
+    }
 }
 
 method !tag-end {
-    my Str:D $tag = @!tags.pop;
-    $!ctx.tag_end($tag);
+    if $!tag {
+        my Str:D $tag = @!tags.pop;
+        $!ctx.tag_end($tag);
+    }
 }
 
 method !tag($tag, &codez) {
@@ -124,6 +129,10 @@ method !height-remaining {
     $!height - $!ty - $!margin - $!gutter-lines * $.line-height
 }
 
+method !lines-remaining {
+    (self!height-remaining / $.line-height + 0.01).Int;
+}
+
 method !text-chunk(
     Str $text,
     Numeric :$width = $!width - self!indent - $!margin,
@@ -186,9 +195,6 @@ method print($text is copy, Bool :$nl) {
         $!tx = $x + $chunk.flow.re;
         $!ty -= $.line-height;
     }
-    my \w = $chunk.lines > 1 ?? $chunk.width !! $chunk.flow.re;
-    my \h = $chunk.content-height;
-    (w, h, $chunk.overflow);
 }
 
 
@@ -233,7 +239,7 @@ method !new-page {
 }
 
 method !ctx {
-    if self!height-remaining < $.lines-before * $.line-height {
+    if self!lines-remaining < $.lines-before {
         self!new-page;
     }
     elsif $!tx > $!margin && $!tx > $!width - self!indent {
@@ -429,37 +435,49 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
     }
 }
 
-method !code(Str $code is copy, :$inline) {
+method !code(@contents is copy) {
+    @contents.append: "\n" unless @contents.tail ~~ "\n";
     my $font-size = 8;
-    my $lines-before = $.lines-before;
-    $lines-before = min(+$code.lines, 3)
-        unless $inline;
 
-    self!style: :mono, :indent(!$inline), :tag(CODE), :$font-size, :$lines-before, {
-        $code .= chomp;
+    self!new-page unless self!lines-remaining >= $.lines-before;
 
-        while $code {
-            my (\w, \h, \overflow) = @.print: $code;
-            $code = overflow;
+    self!style: :mono, :indent, :tag(CODE), :$font-size, :lines-before(0), :pad, {
+        my $x0 = self!indent;
+        my $width = $!surface.width - $!margin - $x0;
+        self!pad-here;
+        my $y0 = $!ty;
+        my constant pad = 5;
 
-            unless $inline {
-                # draw code-block background
-                my constant pad = 5;
-                my $x0 = self!indent;
-                my $width = $!surface.width - $!margin - $x0;
-
-                given $!ctx {
-                    .save;
-                    .rgba(0, 0, 0, 0.1);
-                    .line_width = 1.0;
-                    .rectangle($x0 - pad, $!ty - h - pad, $width + 2*pad, h + 2*pad);
-                    .fill: :preserve;
-                    .rgba(0, 0, 0, 0.25);
-                    .stroke;
-                    .restore;
+        for 0 ..^ @contents -> $i {
+            given @contents[$i] {
+                when "\n" {
+                    my $at-end = $i == @contents-1;
+                    if self!lines-remaining <= 0 || $at-end {
+                        given $!ctx {
+                            # draw code block background
+                            .save;
+                            .rgba(0, 0, 0, 0.1);
+                            .line_width = 1.0;
+                            .rectangle($x0 - pad, $y0 - 2*pad, $width + 2*pad, $!ty - $y0 + 3*pad);
+                            .fill: :preserve;
+                            .rgba(0, 0, 0, 0.25);
+                            .stroke;
+                            .restore;
+                        }
+                        self!new-page unless $at-end;
+                        $y0 = $!ty;
+                    }
+                    else {
+                        $.say;
+                    }
+                }
+                when Str { $.print($_); }
+                default  {
+                    # presumably formatted
+                    temp $!tag = False; # to keep Cairo happy
+                    $.pod2pdf($_);
                 }
             }
-            self!new-page if overflow;
         }
     }
 }
@@ -527,7 +545,7 @@ multi method pod2pdf(Pod::Item $pod) {
 
 multi method pod2pdf(Pod::Block::Code $pod) {
     self!style: :pad, :tag(Paragraph), {
-        self!code: $.pod2text($pod);
+        self!code: $pod.contents;
     }
 }
 
@@ -603,7 +621,9 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             }
         }
         when 'C' {
-            self!code: $.pod2text($pod), :inline;
+            self!style: :mono, :tag(CODE), :font-size(8), {
+                $.print: $.pod2text($pod);
+            }
         }
         when 'T' {
             self!style: :mono, {
@@ -779,7 +799,7 @@ multi method pod2pdf(Pod::Block::Declarator $pod) {
 
         if $code {
             self!style: :pad, :tag(Paragraph), {
-                self!code($decl ~ ' ' ~ $code);
+                self!code: [$decl ~ ' ' ~ $code];
             };
         }
 

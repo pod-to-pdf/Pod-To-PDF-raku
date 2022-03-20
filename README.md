@@ -132,7 +132,6 @@ my $renderer = pod2pdf($=pod, :%replace, :pdf-file<replace-example.pdf>);
 $renderer.finish(); 
 
 =begin pod
-=comment sample Pod with replaced content
 =TITLE R<title>
 =AUTHOR R<author>
 =DATE R<date>
