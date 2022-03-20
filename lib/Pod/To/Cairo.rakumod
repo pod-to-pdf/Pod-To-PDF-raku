@@ -474,7 +474,7 @@ method !code(@contents is copy) {
                 when Str { $.print($_); }
                 default  {
                     # presumably formatted
-                    temp $!tag = False; # to keep Cairo happy
+                    temp $!tag = False;
                     $.pod2pdf($_);
                 }
             }
