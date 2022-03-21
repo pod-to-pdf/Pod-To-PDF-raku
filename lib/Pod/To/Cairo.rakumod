@@ -110,7 +110,6 @@ method !curr-font {
             $!cur-font-patt = $key;
             $ctx.set_font_face: $!cur-font.cairo-font;
         }
-        $ctx.set_font_size($!style.font-size);
         $!cur-font;
     }
 }
@@ -155,11 +154,12 @@ multi method say($text) {
 }
 
 method !link_begin($chunk, :$x!, :$y!) {
+    my constant pad = 2;
     my %link = %.link;
     if %link<uri> {
         my $width = $chunk.lines > 1 ?? $chunk.width !! $chunk.flow.re - $!tx + $x;
         my $height = $chunk.content-height;
-        my @rect = [$!tx, $!ty - $.font-size, $width, $height];
+        my @rect = [$!tx - pad, $!ty - $.font-size, $width + 2*pad, $height + pad];
         %link ,= :@rect;
     }
     self!ctx.link_begin: |%link;
@@ -412,7 +412,7 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
     my $lines-before = $.lines-before;
 
     given $level {
-        when 1   { self!new-page; }
+        when 0|1 { self!new-page; }
         when 2   { $lines-before = 3; }
         when 3   { $lines-before = 2; }
         when 5   { $italic = True; }
@@ -437,11 +437,10 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
 
 method !code(@contents is copy) {
     @contents.append: "\n" unless @contents.tail ~~ "\n";
-    my $font-size = 8;
 
     self!new-page unless self!lines-remaining >= $.lines-before;
 
-    self!style: :mono, :indent, :tag(CODE), :$font-size, :lines-before(0), :pad, {
+    self!style: :mono, :indent, :tag(CODE), :lines-before(0), :pad, {
         my $x0 = self!indent;
         my $width = $!surface.width - $!margin - $x0;
         self!pad-here;
@@ -621,7 +620,7 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             }
         }
         when 'C' {
-            self!style: :mono, :tag(CODE), :font-size(8), {
+            self!style: :mono, :tag(CODE), {
                 $.print: $.pod2text($pod);
             }
         }

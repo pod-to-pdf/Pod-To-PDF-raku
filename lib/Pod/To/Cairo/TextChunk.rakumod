@@ -156,7 +156,10 @@ method print(:$ctx!, :$x = $!x, :$y = $!y) {
     self!translate($x - $!x, $y - $!y)
         unless $x =~= $!x && $y =~= $!y;
 
-    $ctx.set_font_size: $.font-size;
+    my $font-size = $.font-size;
+    # give code a sparse appearance
+    $font-size *= .90 if $.style.mono;
+    $ctx.set_font_size: $font-size;
     $ctx.show_glyphs($!glyphs, $!glyph-elems);
 }
 
