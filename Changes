@@ -2,8 +2,8 @@ Revision history for Pod-To-PDF
 
 {{$NEXT}}
 
-0.0.15  2022-03-21T00:56:12+13:00
-    - Handle formatting in code blocks
+0.0.16  2022-03-21T14:07:28+13:00
+    - Handle formatting in code blocks, e.g.: =begin code :handle<B> ... 
 
 0.0.15  2022-03-19T07:16:02+13:00
     - Handle replacement formatting (R<>). Added :%replace option to
