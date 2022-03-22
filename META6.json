@@ -28,7 +28,7 @@
   "raku": "6.*",
   "resources": [
   ],
-  "source-url": "git://github.com/dwarring/Pod-To-PDF-raku.git",
+  "source-url": "git://github.com/pod-to-pdf/Pod-To-PDF-raku.git",
   "tags": [
     "pdf",
     "svg",
