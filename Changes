@@ -1,6 +1,8 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+
+0.0.17  2022-03-22T15:35:51+13:00
     - Page break on =TITLE
     - Fix code font-sizing. e.g. to fix appearance of:
       =head1 Large header with C<code>

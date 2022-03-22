@@ -30,7 +30,7 @@ has %.replace;
 has %.index;
 has $.tag = True;
 
-enum Tags ( :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Quote<Quote>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
+enum Tags ( :Artifact<Artifact>, :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Quote<Quote>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
 has Cairo::Surface:D $.surface is required handles <width height>;
 has $!width  = $!surface.width;
@@ -454,6 +454,7 @@ method !code(@contents is copy) {
                     if self!lines-remaining <= 0 || $at-end {
                         given $!ctx {
                             # draw code block background
+                            ##.tag_begin(Artifact); # can't do content-level tags
                             .save;
                             .rgba(0, 0, 0, 0.1);
                             .line_width = 1.0;
@@ -462,6 +463,7 @@ method !code(@contents is copy) {
                             .rgba(0, 0, 0, 0.25);
                             .stroke;
                             .restore;
+                            ##.tag_end(Artifact);
                         }
                         self!new-page unless $at-end;
                         $y0 = $!ty;
