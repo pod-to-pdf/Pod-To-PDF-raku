@@ -1,6 +1,7 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+    - Improved handling of page-breaks in code blocks
 
 0.0.17  2022-03-22T15:35:51+13:00
     - Page break on =TITLE

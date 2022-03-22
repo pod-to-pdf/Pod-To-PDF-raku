@@ -29,6 +29,7 @@ has $.linker = Pod::To::Cairo::Linker;
 has %.replace;
 has %.index;
 has $.tag = True;
+has Numeric $!code-start-y;
 
 enum Tags ( :Artifact<Artifact>, :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Quote<Quote>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
@@ -195,10 +196,18 @@ method print($text is copy, Bool :$nl) {
         $!tx = $x + $chunk.flow.re;
         $!ty -= $.line-height;
     }
+
+    if $chunk.overflow {
+        my $in-code-block = $!code-start-y.defined;
+        self!new-page;
+        $!code-start-y = $!ty if $in-code-block;
+        self.print($chunk.overflow, :$nl);
+    }
 }
 
-
 method !finish-page {
+    self!finish-code
+        if $!code-start-y;
     if @!footnotes {
         temp $!style .= new: :lines-before(0); # avoid current styling
         $!tx = $!margin;
@@ -435,51 +444,57 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
     }
 }
 
-method !code(@contents is copy) {
-    @contents.append: "\n" unless @contents.tail ~~ "\n";
-
-    self!new-page unless self!lines-remaining >= $.lines-before;
-
-    self!style: :mono, :indent, :tag(CODE), :lines-before(0), :pad, {
+method !finish-code {
+    my constant pad = 5;
+    with $!code-start-y -> $y0 {
         my $x0 = self!indent;
         my $width = $!surface.width - $!margin - $x0;
+        given $!ctx {
+            ##.tag_begin(Artifact); # can't do content-level tags
+            .save;
+            .rgba(0, 0, 0, 0.1);
+            .line_width = 1.0;
+            .rectangle($x0 - pad, $y0 - 2*pad, $width + 2*pad, $!ty - $y0 + 3*pad);
+            .fill: :preserve;
+            .rgba(0, 0, 0, 0.25);
+            .stroke;
+            .restore;
+            ##.tag_end(Artifact);
+        }
+        $!code-start-y = Nil;
+    }
+}
+
+method !code(@contents is copy) {
+    @contents.pop if @contents.tail ~~ "\n";
+
+    self!ctx;
+
+    self!style: :mono, :indent, :tag(CODE), :lines-before(0), :pad, {
         self!pad-here;
-        my $y0 = $!ty;
-        my constant pad = 5;
+        my @plain-text;
 
         for 0 ..^ @contents -> $i {
+            $!code-start-y //= $!ty;
             given @contents[$i] {
-                when "\n" {
-                    my $at-end = $i == @contents-1;
-                    if self!lines-remaining <= 0 || $at-end {
-                        given $!ctx {
-                            # draw code block background
-                            ##.tag_begin(Artifact); # can't do content-level tags
-                            .save;
-                            .rgba(0, 0, 0, 0.1);
-                            .line_width = 1.0;
-                            .rectangle($x0 - pad, $y0 - 2*pad, $width + 2*pad, $!ty - $y0 + 3*pad);
-                            .fill: :preserve;
-                            .rgba(0, 0, 0, 0.25);
-                            .stroke;
-                            .restore;
-                            ##.tag_end(Artifact);
-                        }
-                        self!new-page unless $at-end;
-                        $y0 = $!ty;
-                    }
-                    else {
-                        $.say;
-                    }
+                when Str {
+                    @plain-text.push: $_;
                 }
-                when Str { $.print($_); }
                 default  {
                     # presumably formatted
+                    if @plain-text {
+                        $.print: @plain-text.join;
+                        @plain-text = ();
+                    }
                     temp $!tag = False;
                     $.pod2pdf($_);
                 }
             }
         }
+        if @plain-text {
+            $.print: @plain-text.join;
+        }
+        self!finish-code;
     }
 }
 
@@ -545,7 +560,7 @@ multi method pod2pdf(Pod::Item $pod) {
 }
 
 multi method pod2pdf(Pod::Block::Code $pod) {
-    self!style: :pad, :tag(Paragraph), {
+    self!style: :pad, :tag(Paragraph), :lines-before(3), {
         self!code: $pod.contents;
     }
 }
