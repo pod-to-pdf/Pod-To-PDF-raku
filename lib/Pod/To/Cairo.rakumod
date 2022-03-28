@@ -216,19 +216,21 @@ method !finish-page {
         self!draw-line($!margin, $!ty, $!width - $!margin, $!ty);
         temp $!gutter-lines = 0;
 
-        while @!footnotes {
-            $.pad(1);
-            my $footnote = @!footnotes.shift;
-            self!style: :tag(Note), {
-                my $y = $footnote.shift;
-                my $ind = $footnote.shift;
-                my %link = :page($!page-num), :pos[$!margin, $y];
-                self!style: :tag(Label), :%link, {
-                    $.print($ind); #[n]
-                }
-                $!tx += 5;
-                self!tag: Paragraph, {
-                    $.pod2pdf($footnote);
+        self!tag: Paragraph, {
+            while @!footnotes {
+                $.pad(1);
+                my $footnote = @!footnotes.shift;
+                self!style: :tag(Note), {
+                    my $y = $footnote.shift;
+                    my $ind = $footnote.shift;
+                    my %link = :page($!page-num), :pos[$!margin, $y];
+                    self!style: :tag(Label), :%link, {
+                        $.print($ind); #[n]
+                    }
+                    $!tx += 5;
+                    self!tag: Paragraph, {
+                        $.pod2pdf($footnote);
+                    }
                 }
             }
         }
