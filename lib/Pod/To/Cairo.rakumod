@@ -68,7 +68,7 @@ method read($pod) {
     }
 }
 
-submethod TWEAK(:$pod, :@fonts, :%metadata) {
+method !preload-fonts(@fonts) {
     for @fonts -> % ( Str :$file!, Bool :$bold, Bool :$italic, Bool :$mono ) {
         # font preload
         my Pod::To::Cairo::Style $style .= new: :$bold, :$italic, :$mono;
@@ -80,6 +80,10 @@ submethod TWEAK(:$pod, :@fonts, :%metadata) {
             warn "no such font file: $file";
         }
     }
+}
+
+submethod TWEAK(:$pod, :@fonts, :%metadata) {
+    self!preload-fonts(@fonts);
     self.metadata(.key.lc) = .value for %metadata.pairs;
     self.read($_) with $pod;
 }
@@ -757,54 +761,55 @@ multi method pod2pdf(Pod::Defn $pod) {
 
 multi method pod2pdf(Pod::Block::Declarator $pod) {
     my $w := $pod.WHEREFORE;
-    my Level $level = 3;
-    my ($type, $code, $name, $decl) = do given $w {
+
+    my %spec := do given $w {
         when Method {
             my @params = .signature.params.skip(1);
             @params.pop if @params.tail.name eq '%_';
-            (
-                (.multi ?? 'multi ' !! '') ~ 'method',
-                .name ~ signature2text(@params, .returns),
+            %(
+                :type((.multi ?? 'multi ' !! '') ~ 'method'),
+                :code(.name ~ signature2text(@params, .returns)),
             )
         }
         when Sub {
-            (
-                (.multi ?? 'multi ' !! '') ~ 'sub',
-                .name ~ signature2text(.signature.params, .returns)
+            %(
+                :type((.multi ?? 'multi ' !! '') ~ 'sub'),
+                :code(.name ~ signature2text(.signature.params, .returns))
             )
         }
         when Attribute {
-            my $gist = .gist;
-            my $name = .name.subst('$!', '');
-            $gist .= subst('!', '.')
+            my $code = .gist;
+            $code .= subst('!', '.')
                 if .has_accessor;
+            my $name = .name.subst('$!', '');
 
-            ('attribute', $gist, $name, 'has');
+            %(:type<attribute>, :$code, :$name, :decl<has>);
         }
         when .HOW ~~ Metamodel::EnumHOW {
-            ('enum', .raku() ~ signature2text($_.enums.pairs));
+            %(:type<enum>, :code(.raku() ~ signature2text($_.enums.pairs)));
         }
         when .HOW ~~ Metamodel::ClassHOW {
-            $level = 2;
-            ('class', .raku, .^name);
+            %(:type<class>, :name(.^name), :level(2));
         }
         when .HOW ~~ Metamodel::ModuleHOW {
-            $level = 2;
-            ('module', .raku, .^name);
+            %(:type<module>, :name(.^name), :level(2));
         }
         when .HOW ~~ Metamodel::SubsetHOW {
-            ('subset', .raku ~ ' of ' ~ .^refinee().raku);
+            %(:type<subset>, :code(.raku ~ ' of ' ~ .^refinee().raku));
         }
         when .HOW ~~ Metamodel::PackageHOW {
-            ('package', .raku)
+            %(:type<package>)
         }
         default {
-            '', ''
+            %()
         }
     }
 
-    $name //= $w.?name // '';
-    $decl //= $type;
+    my Str $type = %spec<type> // '';
+    my Level $level = %spec<level> // 3;
+    my $name = %spec<name>  // $w.?name // '';
+    my $decl = %spec<decl>  // $type;
+    my $code = %spec<code>  // $w.raku;
 
     self!style: :lines-before(3), :pad, {
         self!heading($type.tclc ~ ' ' ~ $name, :$level);
@@ -815,10 +820,8 @@ multi method pod2pdf(Pod::Block::Declarator $pod) {
             }
         }
 
-        if $code {
-            self!style: :pad, :tag(Paragraph), {
-                self!code: [$decl ~ ' ' ~ $code];
-            };
+        self!style: :pad, :tag(Paragraph), {
+            self!code: [$decl ~ ' ' ~ $code];
         }
 
         if $pod.trailing -> $trailing {

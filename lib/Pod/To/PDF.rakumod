@@ -15,7 +15,7 @@ submethod TWEAK(Str :$title, Str :$lang = 'en') {
 
 method render(
     $class: $pod,
-    :$pdf-file = tempfile("POD6-****.pdf", :!unlink)[0],
+    Str:D :$pdf-file = tempfile("POD6-****.pdf", :!unlink)[0],
     UInt:D :$width  = 612,
     UInt:D :$height = 792,
     Bool :$index = True,
@@ -23,13 +23,12 @@ method render(
 ) {
     state %cache{Any};
     %cache{$pod}{$width~'x'~$height} //= do {
-        my $out-file = $pdf-file // tempfile("POD6-****.pdf", :!unlink)[0];
-        my Cairo::Surface::PDF $surface .= create($out-file, $width, $height);
+        my Cairo::Surface::PDF $surface .= create($pdf-file, $width, $height);
         my $obj = $class.new(:$pod, :$surface, |c);
         $obj!build-index
             if $index && $obj.index;
         $surface.finish;
-        $out-file;
+        $pdf-file;
     }
 }
 
@@ -164,8 +163,8 @@ From Raku:
 
 =begin Exports
 
-    class Pod::To::PDF;
-    sub pod2pdf; # See below
+=item C<class Pod::To::PDF;>
+=item C<sub pod2pdf; # See below>
 
 From Raku code, the C<pod2pdf> function returns a L< Cairo::Surface::PDF> object which can
 be further manipulated, or finished to complete rendering.
@@ -202,7 +201,7 @@ A surface to render to
 The page size in points (there are 72 points per inch).
 
 =defn `UInt:D :$margin`
-The page margin in points
+The page margin in points (default 20).
 
 =defn `Hash :@fonts`
 By default, Pod::To::PDF loads system fonts via FontConfig. This option can be used to preload selected fonts.
