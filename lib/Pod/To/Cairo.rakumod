@@ -105,7 +105,6 @@ method !pad-here {
 method !curr-font {
     given $!style.pattern -> FontConfig $patt {
         my $key := $patt.Str;
-        my $ctx := self!ctx;
         unless $key eq $!cur-font-patt {
             $!cur-font = %!fonts{$key} //= do {
                 my Str:D $file = $patt.match.file;
@@ -113,6 +112,7 @@ method !curr-font {
                 HarfBuzz::Font::Cairo.new: :$file;
             }
             $!cur-font-patt = $key;
+            my $ctx := self!ctx;
             $ctx.set_font_face: $!cur-font.cairo-font;
         }
         $!cur-font;
@@ -231,7 +231,7 @@ method !finish-page {
                     self!style: :tag(Label), :%link, {
                         $.print($ind); #[n]
                     }
-                    $!tx += 5;
+                    $!tx += 3;
                     self!tag: Paragraph, {
                         $.pod2pdf($footnote);
                     }
@@ -387,10 +387,10 @@ multi method pod2pdf(Pod::Block::Table $pod) {
                 }
             }
             self!pad-here;
-            my @header = @table.shift.List;
-            if @header {
+            my @headers = @table.shift.List;
+            if @headers {
                 self!tag: TableHead, {
-                    self!table-row: @header, @widths, :header;
+                    self!table-row: @headers, @widths, :header;
                 }
             }
 
@@ -450,22 +450,28 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
     }
 }
 
+method !artifact(&code) {
+    ## $!ctx.tag_begin(Artifact); # can't do content-level tags
+    &code();
+    ## $!ctx.tag_end(Artifact);
+}
+
 method !finish-code {
     my constant pad = 5;
     with $!code-start-y -> $y0 {
         my $x0 = self!indent;
         my $width = $!surface.width - $!margin - $x0;
-        given $!ctx {
-            ##.tag_begin(Artifact); # can't do content-level tags
-            .save;
-            .rgba(0, 0, 0, 0.1);
-            .line_width = 1.0;
-            .rectangle($x0 - pad, $y0 - 2*pad, $width + 2*pad, $!ty - $y0 + 3*pad);
-            .fill: :preserve;
-            .rgba(0, 0, 0, 0.25);
-            .stroke;
-            .restore;
-            ##.tag_end(Artifact);
+        self!artifact: {
+            given $!ctx {
+                .save;
+                .rgba(0, 0, 0, 0.1);
+                .line_width = 1.0;
+                .rectangle($x0 - pad, $y0 - 2*pad, $width + 2*pad, $!ty - $y0 + 3*pad);
+                .fill: :preserve;
+                .rgba(0, 0, 0, 0.25);
+                .stroke;
+                .restore;
+            }
         }
         $!code-start-y = Nil;
     }
@@ -694,7 +700,7 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
         }
         when 'X' {
             my %link;
-            my $term = $.pod2text-inline($pod.contents);
+            my $term = $.pod2text-inline($pod.contents).trim;
             if $term {
                 my Str:D $name = self!gen-dest-name('index-' ~ $term);
                 %link = :dest($name);
@@ -712,8 +718,8 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
 
             if $pod.meta -> $meta {
                 for $meta.List {
-                    my $idx = %!index{.head} //= %();
-                    $idx = $idx{$_} //= %() for .skip;
+                    my $idx = %!index{.head.trim} //= %();
+                    $idx = $idx{.trim} //= %() for .skip;
                     $idx<#refs>.push: %link;
                 }
             }
@@ -880,8 +886,10 @@ method !underline-thickness {
 method !underline($tc, :$tab = self!indent, ) {
     my \dy = self!underline-position;
     my $linewidth = self!underline-thickness;
-    for $tc.lines {
-        self!draw-line(.x, .y - dy, .x1, :$linewidth);
+    self!artifact: {
+        for $tc.lines {
+            self!draw-line(.x, .y - dy, .x1, :$linewidth);
+        }
     }
 }
 
