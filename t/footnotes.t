@@ -21,6 +21,7 @@ my $xml = q{<Document>
   </P>
   <!-- this is how Pod::To::PDF::API6 structures footnotes
     -- see also PDF Association - Tagged PDF Best Practice Guide: Syntax
+    -- Difficult to do via current tag support in Cairo's API.
     -->
   <P>
     Paragraph with formatting, <Code>code</Code> and <Reference><Link href="#blah">links</Link></Reference><Note>

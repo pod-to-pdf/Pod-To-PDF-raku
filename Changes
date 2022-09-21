@@ -2,6 +2,10 @@ Revision history for Pod-To-PDF
 
 {{$NEXT}}
 
+0.1.0  2022-09-22T07:34:57+12:00
+    - Give footnotes their own tag; for conformance with PDF/UA best
+      practices
+
 0.0.18  2022-03-23T07:41:42+13:00
     - Improved handling of page-breaks in code blocks
     - Moved repo to github pod-to-pdf organization.

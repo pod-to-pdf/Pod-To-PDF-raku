@@ -34,7 +34,9 @@ $pdf.finish();
 Exports
 =======
 
-class Pod::To::PDF; sub pod2pdf; # See below
+  * `class Pod::To::PDF;`
+
+  * `sub pod2pdf; # See below`
 
 From Raku code, the `pod2pdf` function returns a [Cairo::Surface::PDF](Cairo::Surface::PDF) object which can be further manipulated, or finished to complete rendering.
 
@@ -74,7 +76,7 @@ The page size in points (there are 72 points per inch).
 
 **`UInt:D :$margin`**
 
-The page margin in points
+The page margin in points (default 20).
 
 **`Hash :@fonts`**
 
