@@ -15,7 +15,7 @@ submethod TWEAK(Str :$title, Str :$lang = 'en') {
 
 method render(
     $class: $pod,
-    Str:D :$pdf-file = tempfile("POD6-****.pdf", :!unlink)[0],
+    Str :$pdf-file is copy,
     UInt:D :$width  = 612,
     UInt:D :$height = 792,
     Bool :$index = True,
@@ -23,6 +23,7 @@ method render(
 ) {
     state %cache{Any};
     %cache{$pod}{$width~'x'~$height} //= do {
+        $pdf-file //= tempfile("POD6-****.pdf", :!unlink)[0];
         my Cairo::Surface::PDF $surface .= create($pdf-file, $width, $height);
         my $obj = $class.new(:$pod, :$surface, |c);
         $obj!build-index
