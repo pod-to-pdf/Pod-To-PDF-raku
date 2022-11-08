@@ -57,6 +57,18 @@ Page height in points (default: 792)
 
 Page margin in points (default: 792)
 
+**--/toc**
+
+
+
+Disable table of contents
+
+**--/index**
+
+
+
+Disable index of terms
+
 Exports
 =======
 

@@ -446,7 +446,7 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
         }
 
         self.add-toc-entry: $Title, :dest($name), :$level
-            if $toc;
+            if $toc && $!contents;
     }
 }
 

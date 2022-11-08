@@ -9,6 +9,7 @@ has Str %!metadata;
 has int32 @!outline-path;
 
 submethod TWEAK(Str :$title, Str :$lang = 'en') {
+warn self.contents.raku;
     self.title = $_ with $title;
     self.surface.set_metadata(CAIRO_PDF_METADATA_CREATOR, "Raku {self.^name} v{self.^ver}");
 }
@@ -192,6 +193,14 @@ Page height in points (default: 792)
 =defn --margin=n
 
 Page margin in points (default: 792)
+
+=defn --/toc
+
+Disable table of contents
+
+=defn --/index
+
+Disable index of terms
 
 =begin Exports
 
