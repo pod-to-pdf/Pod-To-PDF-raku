@@ -15,31 +15,42 @@ submethod TWEAK(Str :$title, Str :$lang = 'en') {
 
 method render(
     $class: $pod,
-    Str :$pdf-file is copy,
-    UInt:D :$width  = 612,
-    UInt:D :$height = 792,
-    Bool :$index = True,
+    Str :$save-as  is copy,
+    UInt:D :$width  is copy = 612,
+    UInt:D :$height is copy = 792,
+    UInt:D :$margin is copy = 20,
+    Bool :$index    is copy = True,
+    Bool :$contents is copy = True,
     |c,
 ) {
     state %cache{Any};
-    %cache{$pod}{$width~'x'~$height} //= do {
-        $pdf-file //= tempfile("POD6-****.pdf", :!unlink)[0];
-        my Cairo::Surface::PDF $surface .= create($pdf-file, $width, $height);
-        my $obj = $class.new(:$pod, :$surface, |c);
+    %cache{$pod} //= do {
+        for @*ARGS {
+            when /^'--/index'$/        { $index  = False }
+            when /^'--/'[toc|['table-of-']?contents]$/ { $contents  = False }
+            when /^'--width='(\d+)$/   { $width  = $0.Int }
+            when /^'--height='(\d+)$/  { $height = $0.Int }
+            when /^'--margin='(\d+)$/  { $margin = $0.Int }
+            when /^'--save-as='(.+)$/  { $save-as = $0.Str }
+            default { note "ignoring $_ argument" }
+        }
+        $save-as //= tempfile("POD6-****.pdf", :!unlink)[0];
+        my Cairo::Surface::PDF $surface .= create($save-as, $width, $height);
+        my $obj = $class.new: :$pod, :$surface, :$margin, :$contents, |c;
         $obj!build-index
             if $index && $obj.index;
         $surface.finish;
-        $pdf-file;
+        $save-as;
     }
 }
 
 our sub pod2pdf(
     $pod,
     :$class = $?CLASS,
-    Str() :$pdf-file = tempfile("POD6-****.pdf", :!unlink)[0],
+    Str() :$save-as = tempfile("POD6-****.pdf", :!unlink)[0],
     UInt:D :$width  = 612,
     UInt:D :$height = 792,
-    Cairo::Surface::PDF :$surface = Cairo::Surface::PDF.create($pdf-file, $width, $height);
+    Cairo::Surface::PDF :$surface = Cairo::Surface::PDF.create($save-as, $width, $height);
     Bool :$index = True,
     |c,
 ) is export {
@@ -144,7 +155,7 @@ multi method metadata { %!metadata.clone }
 
 From command line:
 
-    =code $ raku --doc=PDF lib/to/class.rakumod | xargs evince
+    =code $ raku --doc=PDF lib/to/class.rakumod --save-as=class.pdf
 
 From Raku:
     =begin code :lang<raku>
@@ -157,10 +168,30 @@ From Raku:
     =head2 SYNOPSIS
     =code foobar.pl <options> files ...
 
-    my Cairo::Surface::PDF $pdf = pod2pdf($=pod, :pdf-file<foobar.pdf>);
+    my Cairo::Surface::PDF $pdf = pod2pdf($=pod, :save-as<foobar.pdf>);
     $pdf.finish();
     =end code
 =end Usage
+
+=head3 Command Line Options:
+
+=defn --save-as=pdf-filename
+
+File-name for the PDF output file. If not given, the
+output will be saved to a temporary file. The file-name
+is echoed to C<stdout>.
+
+=defn --width=n
+
+Page width in points (default: 592)
+
+=defn --height=n
+
+Page height in points (default: 792)
+
+=defn --margin=n
+
+Page margin in points (default: 792)
 
 =begin Exports
 
@@ -192,7 +223,7 @@ sub pod2pdf(
 
 =head4 pod2pdf() Options
 
-=defn `Str() :$pdf-file`
+=defn `Str() :$save-as`
 A filename for the output PDF file.
 
 =defn `Cairo::Surface::PDF :$surface`
@@ -217,7 +248,7 @@ my @fonts = (
     %(:file<fonts/Raku-Mono.ttf>, :mono),
 );
 
-my Cairo::Surface::PDF $pdf = pod2pdf($=pod, :@fonts, :pdf-file<out.pdf>);
+my Cairo::Surface::PDF $pdf = pod2pdf($=pod, :@fonts, :save-as<out.pdf>);
 $pdf.finish();
 =end code
 Each font entry should have a `file` entry and various
@@ -256,7 +287,7 @@ my Str() $date = now.Date;
 my $author = 'David Warring';
 my $description = "sample Pod with replaced content";
 my %replace = :$date, :$title, :$author, :$description;
-my $renderer = pod2pdf($=pod, :%replace, :pdf-file<replace-example.pdf>);
+my $renderer = pod2pdf($=pod, :%replace, :save-as<replace-example.pdf>);
 $renderer.finish(); 
 
 =begin pod

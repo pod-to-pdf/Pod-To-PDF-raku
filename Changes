@@ -1,6 +1,7 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+    - Add command-line options handling.
 
 0.1.0  2022-09-22T07:34:57+12:00
     - Give footnotes their own tag; for conformance with PDF/UA best

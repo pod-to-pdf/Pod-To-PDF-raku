@@ -13,7 +13,7 @@ Usage
 
 From command line:
 
-    $ raku --doc=PDF lib/to/class.rakumod | xargs evince
+    $ raku --doc=PDF lib/to/class.rakumod --save-as=class.pdf
 
 From Raku:
 
@@ -27,9 +27,35 @@ foobar.pl
 =head2 SYNOPSIS
 =code foobar.pl <options> files ...
 
-my Cairo::Surface::PDF $pdf = pod2pdf($=pod, :pdf-file<foobar.pdf>);
+my Cairo::Surface::PDF $pdf = pod2pdf($=pod, :save-as<foobar.pdf>);
 $pdf.finish();
 ```
+
+### Command Line Options:
+
+**--save-as=pdf-filename**
+
+
+
+File-name for the PDF output file. If not given, the output will be saved to a temporary file. The file-name is echoed to `stdout`.
+
+**--width=n**
+
+
+
+Page width in points (default: 592)
+
+**--height=n**
+
+
+
+Page height in points (default: 792)
+
+**--margin=n**
+
+
+
+Page margin in points (default: 792)
 
 Exports
 =======
@@ -62,7 +88,7 @@ sub pod2pdf(
 
 #### pod2pdf() Options
 
-**`Str() :$pdf-file`**
+**`Str() :$save-as`**
 
 A filename for the output PDF file.
 
@@ -93,7 +119,7 @@ my @fonts = (
     %(:file<fonts/Raku-Mono.ttf>, :mono),
 );
 
-my Cairo::Surface::PDF $pdf = pod2pdf($=pod, :@fonts, :pdf-file<out.pdf>);
+my Cairo::Surface::PDF $pdf = pod2pdf($=pod, :@fonts, :save-as<out.pdf>);
 $pdf.finish();
 ```
 
@@ -130,7 +156,7 @@ my Str() $date = now.Date;
 my $author = 'David Warring';
 my $description = "sample Pod with replaced content";
 my %replace = :$date, :$title, :$author, :$description;
-my $renderer = pod2pdf($=pod, :%replace, :pdf-file<replace-example.pdf>);
+my $renderer = pod2pdf($=pod, :%replace, :save-as<replace-example.pdf>);
 $renderer.finish(); 
 
 =begin pod
@@ -156,7 +182,7 @@ Note that installation of the [PDF::Tags::Reader](PDF::Tags::Reader) module enab
 
 For example, to test this module from source.
 
-    $ git clone https://github.com/pod-to-pdf/Pod-To-PDF-raku
+    $ git clone https://github.com/dwarring/Pod-To-PDF-raku
     $ cd Pod-To-PDF-raku
     $ zef install PDF::Tags::Reader # enable structural tests
     $ zef APP::Prove6
