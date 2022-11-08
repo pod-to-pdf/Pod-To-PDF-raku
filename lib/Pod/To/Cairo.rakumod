@@ -16,6 +16,7 @@ has $.margin = 20;
 has $!gutter-lines = Gutter;
 has UInt $!pad = 0;
 has UInt $!page-num = 1;
+has Bool $.page-numbers;
 has HarfBuzz::Font::Cairo %!fonts;
 has HarfBuzz::Font::Cairo $!cur-font;
 has Str $!cur-font-patt = '';
@@ -130,7 +131,7 @@ method !style(&codez, Int :$indent, Str :tag($name), Bool :$pad, |c) {
 }
 
 method !height-remaining {
-    $!height - $!ty - $!margin - $!gutter-lines * $.line-height
+    $!height - $!ty - $!margin - ($!gutter-lines+1) * $.line-height
 }
 
 method !lines-remaining {
@@ -212,6 +213,7 @@ method print($text is copy, Bool :$nl) {
 method !finish-page {
     self!finish-code
         if $!code-start-y;
+
     if @!footnotes {
         temp $!style .= new: :lines-before(0); # avoid current styling
         $!tx = $!margin;
@@ -238,6 +240,24 @@ method !finish-page {
                 }
             }
         }
+    }
+    self!number-page()
+        if !$!blank-page && $!page-numbers;
+
+}
+
+has $!last-page-num = 0;
+method !number-page {
+    my $font-size := 8;
+    my Pod::To::Cairo::Style $style .= new: :$font-size;
+    my HarfBuzz::Font::Cairo $font = self!curr-font;
+    unless $!page-num == $!last-page-num {
+        my $text = $!page-num.Str;
+        my Pod::To::Cairo::TextChunk $chunk .= new: :$text, :$font, :$style;
+        my $x = $.width - $!margin;
+        my $y = $.height - $!margin + $font-size;
+        $chunk.print: :$x, :$y, :$!ctx;
+        $!last-page-num = $!page-num;
     }
 }
 
@@ -460,7 +480,7 @@ method !finish-code {
     my constant pad = 5;
     with $!code-start-y -> $y0 {
         my $x0 = self!indent;
-        my $width = $!surface.width - $!margin - $x0;
+        my $width = $!surface.width - $!margin - $x0 - 2*pad;
         self!artifact: {
             given $!ctx {
                 .save;
@@ -479,6 +499,7 @@ method !finish-code {
 
 method !code(@contents is copy) {
     @contents.pop if @contents.tail ~~ "\n";
+    my $font-size = $.font-size * .85;
 
     self!ctx;
 

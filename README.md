@@ -69,6 +69,12 @@ Disable table of contents
 
 Disable index of terms
 
+**--page-numbers**
+
+
+
+Add page numbers (bottom right)
+
 Exports
 =======
 

@@ -9,7 +9,6 @@ has Str %!metadata;
 has int32 @!outline-path;
 
 submethod TWEAK(Str :$title, Str :$lang = 'en') {
-warn self.contents.raku;
     self.title = $_ with $title;
     self.surface.set_metadata(CAIRO_PDF_METADATA_CREATOR, "Raku {self.^name} v{self.^ver}");
 }
@@ -22,11 +21,13 @@ method render(
     UInt:D :$margin is copy = 20,
     Bool :$index    is copy = True,
     Bool :$contents is copy = True,
+    Bool :$page-numbers is copy,
     |c,
 ) {
     state %cache{Any};
     %cache{$pod} //= do {
         for @*ARGS {
+            when /^'--page-numbers'$/  { $page-numbers = True }
             when /^'--/index'$/        { $index  = False }
             when /^'--/'[toc|['table-of-']?contents]$/ { $contents  = False }
             when /^'--width='(\d+)$/   { $width  = $0.Int }
@@ -37,7 +38,7 @@ method render(
         }
         $save-as //= tempfile("POD6-****.pdf", :!unlink)[0];
         my Cairo::Surface::PDF $surface .= create($save-as, $width, $height);
-        my $obj = $class.new: :$pod, :$surface, :$margin, :$contents, |c;
+        my $obj = $class.new: :$pod, :$surface, :$margin, :$contents, :$page-numbers, |c;
         $obj!build-index
             if $index && $obj.index;
         $surface.finish;
@@ -201,6 +202,10 @@ Disable table of contents
 =defn --/index
 
 Disable index of terms
+
+=defn --page-numbers
+
+Add page numbers (bottom right)
 
 =begin Exports
 
