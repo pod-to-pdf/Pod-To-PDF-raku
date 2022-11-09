@@ -1,5 +1,5 @@
 use Pod::To::Cairo;
-unit class Pod::To::PDF:ver<0.1.0>
+unit class Pod::To::PDF:ver<0.1.1>
     is Pod::To::Cairo;
 
 use Cairo;

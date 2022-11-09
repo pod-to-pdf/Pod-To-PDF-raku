@@ -1,7 +1,10 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+
+0.1.1  2022-11-09T15:09:40+13:00
     - Add command-line options handling.
+    - Add page numbering option: --page-numbers
 
 0.1.0  2022-09-22T07:34:57+12:00
     - Give footnotes their own tag; for conformance with PDF/UA best
