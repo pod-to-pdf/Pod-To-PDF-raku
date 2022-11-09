@@ -55,7 +55,7 @@ Page height in points (default: 792)
 
 
 
-Page margin in points (default: 792)
+Page margin in points (default: 20)
 
 **--/toc**
 
@@ -200,7 +200,7 @@ Note that installation of the [PDF::Tags::Reader](PDF::Tags::Reader) module enab
 
 For example, to test this module from source.
 
-    $ git clone https://github.com/dwarring/Pod-To-PDF-raku
+    $ git clone https://github.com/pod-to-pdf/Pod-To-PDF-raku
     $ cd Pod-To-PDF-raku
     $ zef install PDF::Tags::Reader # enable structural tests
     $ zef APP::Prove6

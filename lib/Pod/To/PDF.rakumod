@@ -193,7 +193,7 @@ Page height in points (default: 792)
 
 =defn --margin=n
 
-Page margin in points (default: 792)
+Page margin in points (default: 20)
 
 =defn --/toc
 
@@ -329,7 +329,7 @@ Note that installation of the L<PDF::Tags::Reader> module enables structural tes
 For example, to test this module from source.
 
 =begin code
-$ git clone https://github.com/dwarring/Pod-To-PDF-raku
+$ git clone https://github.com/pod-to-pdf/Pod-To-PDF-raku
 $ cd Pod-To-PDF-raku
 $ zef install PDF::Tags::Reader # enable structural tests
 $ zef APP::Prove6
