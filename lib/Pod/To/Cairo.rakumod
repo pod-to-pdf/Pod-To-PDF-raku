@@ -261,7 +261,9 @@ method !number-page {
         my Pod::To::Cairo::TextChunk $chunk .= new: :$text, :$font, :$style;
         my $x = $.width - $!margin - $chunk.content-width;
         my $y = $.height - $!margin + $font-size;
-        $chunk.print: :$x, :$y, :$!ctx;
+        self!artifact: {
+            $chunk.print: :$x, :$y, :$!ctx;
+        }
         $!last-page-num = $!page-num;
     }
 }
