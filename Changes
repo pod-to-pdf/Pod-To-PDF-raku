@@ -2,6 +2,9 @@ Revision history for Pod-To-PDF
 
 {{$NEXT}}
 
+0.1.2  2022-11-10T05:43:21+13:00
+    - Fix tests
+
 0.1.1  2022-11-09T15:09:40+13:00
     - Add command-line options handling.
     - Add page numbering option: --page-numbers
