@@ -84,6 +84,10 @@ method !preload-fonts(@fonts) {
 }
 
 submethod TWEAK(:$pod, :@fonts, :%metadata) {
+    if $!margin < 10 && $!page-numbers {
+        note "omitting page-numbers for margin < 10";
+        $!page-numbers = False;
+    }
     self!preload-fonts(@fonts);
     self.metadata(.key.lc) = .value for %metadata.pairs;
     self.read($_) with $pod;
@@ -216,6 +220,7 @@ method !finish-page {
 
     if @!footnotes {
         temp $!style .= new: :lines-before(0); # avoid current styling
+        temp $!indent = 0;
         $!tx = $!margin;
         $!ty = $!height - $!margin - $!gutter-lines * $.line-height;
 
@@ -254,7 +259,7 @@ method !number-page {
     unless $!page-num == $!last-page-num {
         my $text = $!page-num.Str;
         my Pod::To::Cairo::TextChunk $chunk .= new: :$text, :$font, :$style;
-        my $x = $.width - $!margin;
+        my $x = $.width - $!margin - $chunk.content-width;
         my $y = $.height - $!margin + $font-size;
         $chunk.print: :$x, :$y, :$!ctx;
         $!last-page-num = $!page-num;
