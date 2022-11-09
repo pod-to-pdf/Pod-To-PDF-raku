@@ -3,7 +3,7 @@ plan 3;
 use Pod::To::PDF;
 
 mkdir "tmp";
-my $pdf-file = "tmp/replace.pdf";
+my $save-as = "tmp/replace.pdf";
 
 my $title = 'Sample Title';
 my $date = '2022-03-17';
@@ -12,12 +12,12 @@ my $description = "sample Pod with replaced content";
 my %replace = :$date, :$title, :$author, :$description;
 lives-ok {
     .finish()
-        given pod2pdf($=pod, :%replace, :$pdf-file);
+        given pod2pdf($=pod, :%replace, :$save-as);
 }
 
 %replace<description> = $=pod;
 dies-ok {
-    pod2pdf($=pod, :%replace, :pdf-file<tmp/replace-bad.pdf>);
+    pod2pdf($=pod, :%replace, :save-as<tmp/replace-bad.pdf>);
 }, 'recursive replacement detected';
 
 my $xml = q{<Document>

@@ -7,11 +7,11 @@ use Cairo;
 plan 7;
 
 mkdir "tmp";
-my $pdf-file = "tmp/metadata.pdf";
+my $save-as = "tmp/metadata.pdf";
 my $width = 250;
 my $height = 350;
 my %replace = :author('David Warring'), :where<POD>;
-my Cairo::Surface::PDF $surface .= create($pdf-file, $width, $height);
+my Cairo::Surface::PDF $surface .= create($save-as, $width, $height);
 my Pod::To::PDF $pod .= new(:$=pod, :$surface, :%replace);
 
 my $xml = q{<Document>

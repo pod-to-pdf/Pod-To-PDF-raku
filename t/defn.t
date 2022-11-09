@@ -7,8 +7,8 @@ use Cairo;
 plan 2;
 
 mkdir "tmp";
-my $pdf-file = "tmp/defn.pdf";
-my Cairo::Surface $pdf = pod2pdf($=pod, :$pdf-file);
+my $save-as = "tmp/defn.pdf";
+my Cairo::Surface $pdf = pod2pdf($=pod, :$save-as);
 lives-ok {$pdf.finish}
 
 my $xml = q{<Document>
@@ -16,7 +16,7 @@ my $xml = q{<Document>
     pod2pdf() Options
   </H2>
   <P>
-    <Quote>Str() :$pdf-ﬁle</Quote>
+    <Quote>Str() :$save-as</Quote>
   </P>
   <P>
     A ﬁlename for the output PDF ﬁle.
@@ -50,7 +50,7 @@ subtest 'document structure', {
 
 =head2 pod2pdf() Options
 
-=defn Str() :$pdf-file
+=defn Str() :$save-as
 A filename for the output PDF file.
 
 =defn Cairo::Surface::PDF :$surface
