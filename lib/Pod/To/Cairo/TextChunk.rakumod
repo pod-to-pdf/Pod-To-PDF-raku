@@ -20,7 +20,6 @@ has TextDirection $.direction = 'ltr';
 has Str $.text is required;
 has Str $.overflow is built;
 has Pod::To::Cairo::Style $.style is rw handles <font-size leading space-width shape>;
-has Bool $.verbatim;
 has Cairo::Glyphs $!glyphs;
 has UInt $.glyph-elems;
 has Numeric:D $.x = 0;

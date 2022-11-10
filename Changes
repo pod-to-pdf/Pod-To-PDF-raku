@@ -1,6 +1,7 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+    - Fix bug in table page-breaking
 
 0.1.2  2022-11-10T05:43:21+13:00
     - Fix tests

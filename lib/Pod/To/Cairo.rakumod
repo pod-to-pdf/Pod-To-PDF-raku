@@ -358,7 +358,7 @@ method !table-row(@row, @widths, Bool :$header) {
                         $row-height = $_ if $_ > $row-height;
                     }
                     if $tb.overflow -> $text {
-                        @overflow[$_] = $tb.clone: :$text, :$width, :height(Inf);
+                        @overflow[$_] = $tb.clone: :$text, :$width, :overflow(Str);
                     }
                 }
                 $tab += $width + hpad;
