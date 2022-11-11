@@ -139,7 +139,9 @@ method !height-remaining {
 }
 
 method !lines-remaining {
-    (self!height-remaining / $.line-height + 0.01).Int;
+    my $line-continuation := $!tx > self!indent;
+    (self!height-remaining / $.line-height + 0.01).Int
+    + $line-continuation;
 }
 
 method !text-chunk(
