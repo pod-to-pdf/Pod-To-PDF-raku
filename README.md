@@ -196,14 +196,14 @@ Please check these module's installation instructions.
 Testing
 =======
 
-Note that installation of the [PDF::Tags::Reader](PDF::Tags::Reader) module enables structural testing. 
+Note that installation of the [PDF::Tags::Reader](https://raku.land/zef:dwarring/PDF::Tags::Reader) module enables structural testing. 
 
 For example, to test this module from source.
 
     $ git clone https://github.com/pod-to-pdf/Pod-To-PDF-raku
     $ cd Pod-To-PDF-raku
     $ zef install PDF::Tags::Reader # enable structural tests
-    $ zef APP::Prove6
+    $ zef install APP::Prove6
     $ zef --deps-only install .
     $ prove6 -I .
 
