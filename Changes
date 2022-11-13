@@ -2,6 +2,9 @@ Revision history for Pod-To-PDF
 
 {{$NEXT}}
 
+0.1.4  2022-11-14T08:09:46+13:00
+    - Fix text flow on last line of a page.
+
 0.1.3  2022-11-11T06:56:46+13:00
     - Fix bug in table page-breaking
 
