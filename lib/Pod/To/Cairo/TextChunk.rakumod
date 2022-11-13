@@ -73,8 +73,9 @@ method layout(
     my int $j = 0;
     my int $next-nl = @nls.shift;
     my \space = $!font.ft-face.glyph-index: ' ';
-    my int $wb-i;
-    my int $wb-j;
+    my int $wb-i = 0;
+    my int $wb-j = 0;
+    my Num $wb-x = $x;
     my Bool $first-word = ! $!flow.re;
 
     layup:
@@ -89,6 +90,7 @@ method layout(
                 $first-word = False;
                 $wb-i = $i + 1;
                 $wb-j = $j;
+                $wb-x = $x;
             }
             elsif ($x - $!x) > $!width && !$first-word {
                 # partial word exceeds line length. back it out and
@@ -96,6 +98,7 @@ method layout(
                 $nl ||= 1;
                 $i = $wb-i;
                 $j = $wb-j;
+                $x = $wb-x;
                 $wb-i = $i + 1;
                 $glyph = $shaper[$i];
             }
