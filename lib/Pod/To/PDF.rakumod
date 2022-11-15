@@ -218,7 +218,7 @@ be further manipulated, or finished to complete rendering.
 
 =begin Description
 
-This module renders Pod to PDF documents via Cairo.
+This module does simple rendering of Pod to PDF documents via Cairo.
 
 The generated PDF has a table of contents and is tagged for
 accessibility and testing purposes.

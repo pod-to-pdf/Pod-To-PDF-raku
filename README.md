@@ -87,7 +87,7 @@ From Raku code, the `pod2pdf` function returns a [Cairo::Surface::PDF](Cairo::Su
 Description
 ===========
 
-This module renders Pod to PDF documents via Cairo.
+This module does simple rendering of Pod to PDF documents via Cairo.
 
 The generated PDF has a table of contents and is tagged for accessibility and testing purposes.
 

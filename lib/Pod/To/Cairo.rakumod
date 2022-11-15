@@ -217,8 +217,10 @@ method print($text is copy, Bool :$nl) {
 }
 
 method !finish-page {
-    self!finish-code
-        if $!code-start-y;
+    if $!code-start-y {
+        $!ty -= $.line-height - $.font-size;
+        self!finish-code;
+    }
 
     if @!footnotes {
         temp $!style .= new: :lines-before(0); # avoid current styling
@@ -283,7 +285,7 @@ method !new-page {
 }
 
 method !ctx {
-    if self!lines-remaining < $.lines-before {
+    if self!lines-remaining < $.lines-before + $!pad {
         self!new-page;
     }
     elsif $!tx > $!margin && $!tx > $!width - self!indent {
