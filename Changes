@@ -2,6 +2,10 @@ Revision history for Pod-To-PDF
 
 {{$NEXT}}
 
+0.1.5  2022-11-21T07:54:05+13:00
+    - Increase line-height. Better match
+      Pod::To::PDF::Lite
+
 0.1.4  2022-11-14T08:09:46+13:00
     - Fix text flow on last line of a page.
 
