@@ -13,7 +13,7 @@ has %.link;
 has FontConfig $.pattern is built;
 
 method clone { nextwith :pattern(FontConfig), |%_; }
-method leading { 1.15 }
+method leading { 1.25 }
 method line-height { $.leading * $!font-size; }
 
 method family { $!mono ?? 'monospace' !! 'serif'; }

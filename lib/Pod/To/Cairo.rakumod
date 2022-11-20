@@ -285,7 +285,7 @@ method !new-page {
 }
 
 method !ctx {
-    if self!lines-remaining < $.lines-before + $!pad {
+    if self!lines-remaining < $.lines-before {
         self!new-page;
     }
     elsif $!tx > $!margin && $!tx > $!width - self!indent {
