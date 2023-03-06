@@ -139,7 +139,7 @@ method content-height { $!flow.im + $.font-size }
 method content-width  { @!lines>>.x1.max - $!x }
 
 method !translate($dx, $dy) {
-    for 0 ..^ $!glyphs.elems {
+    for (^$!glyphs.elems) {
         given $!glyphs[$_] {
             .x += $dx;
             .y += $dy;
