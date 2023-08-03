@@ -49,16 +49,15 @@ is $pod.metadata('author'), 'David Warring';
 
 lives-ok {$surface.finish}
 
-try require ::('PDF::Tags::Reader');
-if ::('PDF::Tags::Reader') ~~ Failure {
+if (try require PDF::Tags::Reader) === Nil {
     skip-rest "PDF::Tags::Reader is required to perform structural PDF testing";
     exit 0;
 }
 
 subtest 'Metadata verification', {
     plan 2;
-    require ::('PDF::Class');
-    my $pdf  = ::('PDF::Class').open: "tmp/metadata.pdf";
+    require PDF::Class;
+    my $pdf  = PDF::Class.open: "tmp/metadata.pdf";
     my $info = $pdf.Info;
     is $info.Title, 'Title from POD v1.2.3', 'PDF Title (POD title + version)';
     is $info.Subject, 'Subtitle from POD', 'PDF Subject (POD subtitle)';
@@ -67,9 +66,9 @@ subtest 'Metadata verification', {
 subtest 'document structure', {
     plan 1;
     # PDF::Class is an indirect dependency of PDF::Tags::Reader
-    require ::('PDF::Class');
-    my $pdf  = ::('PDF::Class').open: "tmp/metadata.pdf";
-    my $tags = ::('PDF::Tags::Reader').read: :$pdf;
+    require PDF::Class;
+    my $pdf  = PDF::Class.open: "tmp/metadata.pdf";
+    my $tags = PDF::Tags::Reader.read: :$pdf;
     my $actual-xml = $tags[0].Str(:omit<Span>);
     is $actual-xml, $xml, 'PDF Structure is correct';
 }
