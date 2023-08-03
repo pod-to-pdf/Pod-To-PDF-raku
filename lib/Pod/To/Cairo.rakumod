@@ -111,9 +111,9 @@ method !curr-font {
     given $!style.pattern -> FontConfig $patt {
         my $key := $patt.Str;
         unless $key eq $!cur-font-patt {
-            $!cur-font = %!fonts{$key} //= do {
-                my Str:D $file = $patt.match.file;
-                note "loading $file" if $!verbose;
+            my Str:D $file = $patt.match.file;
+            $!cur-font = %!fonts{$file} //= do {
+                note "loading font $file" if $!verbose;
                 HarfBuzz::Font::Cairo.new: :$file;
             }
             $!cur-font-patt = $key;

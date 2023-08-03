@@ -1,7 +1,7 @@
 #| Basic core-font styler
 unit class Pod::To::Cairo::Style;
 
-use FontConfig;
+use FontConfig::Pattern;
 
 has Bool $.bold;
 has Bool $.italic;
@@ -10,9 +10,9 @@ has Bool $.mono;
 has UInt $.lines-before = 1;
 has $.font-size = 10;
 has %.link;
-has FontConfig $.pattern is built;
+has FontConfig::Pattern $.pattern is built;
 
-method clone { nextwith :pattern(FontConfig), |%_; }
+method clone { nextwith :pattern(FontConfig::Pattern), |%_; }
 method leading { 1.25 }
 method line-height { $.leading * $!font-size; }
 
@@ -23,7 +23,7 @@ method pattern {
         my %patt = :$.family;
         %patt<slant> = 'italic' if $!italic;
         %patt<weight>  = 'bold' if $!bold;
-        FontConfig.new: |%patt;
+        FontConfig::Pattern.new: |%patt;
     }
 }
 

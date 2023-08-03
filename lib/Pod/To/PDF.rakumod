@@ -22,6 +22,7 @@ method render(
     Bool :$index    is copy = True,
     Bool :$contents is copy = True,
     Bool :$page-numbers is copy,
+    Bool :$verbose is copy,
     |c,
 ) {
     state %cache{Any};
@@ -29,6 +30,7 @@ method render(
         for @*ARGS {
             when /^'--page-numbers'$/  { $page-numbers = True }
             when /^'--/index'$/        { $index  = False }
+            when /^'--verbose'$/       { $verbose  = True }
             when /^'--/'[toc|['table-of-']?contents]$/ { $contents  = False }
             when /^'--width='(\d+)$/   { $width  = $0.Int }
             when /^'--height='(\d+)$/  { $height = $0.Int }
@@ -38,7 +40,7 @@ method render(
         }
         $save-as //= tempfile("POD6-****.pdf", :!unlink)[0];
         my Cairo::Surface::PDF $surface .= create($save-as, $width, $height);
-        my $obj = $class.new: :$pod, :$surface, :$margin, :$contents, :$page-numbers, |c;
+        my $obj = $class.new: :$pod, :$surface, :$margin, :$contents, :$page-numbers, :$verbose, |c;
         $obj!build-index
             if $index && $obj.index;
         $surface.finish;
