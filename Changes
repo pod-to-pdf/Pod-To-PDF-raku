@@ -2,6 +2,11 @@ Revision history for Pod-To-PDF
 
 {{$NEXT}}
 
+0.1.6  2023-08-04T07:45:18+12:00
+    - rework optional loading of PDF::Tags::Reader in test suite
+    - use new FontConfig::Pattern class, introduced in FontConfig v0.1.3+
+    - tweak font caching to work on file files, not FontConfig patterns
+
 0.1.5  2022-11-21T07:54:05+13:00
     - Increase line-height. Better match
       Pod::To::PDF::Lite
