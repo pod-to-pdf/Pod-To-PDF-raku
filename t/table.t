@@ -168,6 +168,7 @@ my $xml = q{<Document>
           C C
         </TD>
         <TD>
+          X
         </TD>
       </TR>
       <TR>
@@ -253,7 +254,7 @@ asdf
 =begin table :caption('Table 4')
 H 1 | H 2 | H 3 | H 4
 ====|=====|=====|====
-Hello, I'm kinda long, I think | B B | C C
+Hello, I'm kinda long, I think | B B | C C | X
 1 1 | Me also, methinks | 3 3 | This should definitely wrap. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
 ww | xx | yy | zz
 =end table

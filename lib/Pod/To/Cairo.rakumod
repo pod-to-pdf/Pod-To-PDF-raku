@@ -481,10 +481,13 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
     }
 }
 
+# artifacts started working between v1.16.0 < cairo <= v1.17.0
+# todo: further bisection
+my $artifacts-enabled = Cairo::version() >= v1.17.0;
 method !artifact(&code) {
-    ## $!ctx.tag_begin(Artifact); # can't do content-level tags
+    $!ctx.tag_begin(Artifact) if $artifacts-enabled;
     &code();
-    ## $!ctx.tag_end(Artifact);
+    $!ctx.tag_end(Artifact) if $artifacts-enabled;
 }
 
 method !finish-code {

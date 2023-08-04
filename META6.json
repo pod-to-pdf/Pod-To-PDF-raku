@@ -6,7 +6,7 @@
   "build-depends": [
   ],
   "depends": [
-    "Cairo:ver<0.3.0+>",
+    "Cairo:ver<0.3.4+>",
     "File::Temp",
     "FontConfig:ver<0.1.3+>",
     "HarfBuzz:ver<0.0.11+>",
