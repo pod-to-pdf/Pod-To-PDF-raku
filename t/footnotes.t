@@ -28,10 +28,7 @@ my $xml = q{<Document>
       <Lbl>
         <Link>[1]</Link>
       </Lbl>
-      <P>
-        if you click, here, you should got back to the paragraph
-      </P>
-    </Note>.
+      if you click, here, you should got back to the paragraph</Note>.
   </P>
 </Document>
 };

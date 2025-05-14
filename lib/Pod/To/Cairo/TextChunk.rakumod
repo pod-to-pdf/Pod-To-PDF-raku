@@ -1,6 +1,6 @@
 unit class Pod::To::Cairo::TextChunk;
 
-use Text::FriBidi::Defs :FriBidiPar;
+use Text::FriBidi::Defs :types, :FriBidiPar;
 use Text::FriBidi::Line;
 use Pod::To::Cairo::Style;
 use HarfBuzz::Buffer;
@@ -45,7 +45,7 @@ method clone {
 }
 
 method !shaper {
-    my UInt $direction = $!direction eq 'rtl'
+    my FriBidiParType $direction = $!direction eq 'rtl'
         ?? FRIBIDI_PAR_RTL
         !! FRIBIDI_PAR_LTR;
     my Text::FriBidi::Line $line .= new: :$!text, :$direction;

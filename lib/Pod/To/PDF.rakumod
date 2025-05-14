@@ -16,9 +16,13 @@ submethod TWEAK(Str :$title, Str :$lang = 'en') {
 method render(
     $class: $pod,
     Str :$save-as  is copy,
-    UInt:D :$width  is copy = 612,
-    UInt:D :$height is copy = 792,
-    UInt:D :$margin is copy = 20,
+    Numeric:D :$width  is copy = 612,
+    Numeric:D :$height is copy = 792,
+    Numeric:D :$margin is copy = 20,
+    Numeric   :$margin-left   is copy,
+    Numeric   :$margin-right  is copy,
+    Numeric   :$margin-top    is copy,
+    Numeric   :$margin-bottom is copy,
     Bool :$index    is copy = True,
     Bool :$contents is copy = True,
     Bool :$page-numbers is copy,
@@ -35,12 +39,16 @@ method render(
             when /^'--width='(\d+)$/   { $width  = $0.Int }
             when /^'--height='(\d+)$/  { $height = $0.Int }
             when /^'--margin='(\d+)$/  { $margin = $0.Int }
+           when /^'--margin-top='(\d+)$/     { $margin-top = $0.Int }
+            when /^'--margin-bottom='(\d+)$/  { $margin-bottom = $0.Int }
+            when /^'--margin-left='(\d+)$/    { $margin-left = $0.Int }
+            when /^'--margin-right='(\d+)$/   { $margin-right = $0.Int }
             when /^'--save-as='(.+)$/  { $save-as = $0.Str }
             default { note "ignoring $_ argument" }
         }
         $save-as //= tempfile("POD6-****.pdf", :!unlink)[0];
         my Cairo::Surface::PDF $surface .= create($save-as, $width, $height);
-        my $obj = $class.new: :$pod, :$surface, :$margin, :$contents, :$page-numbers, :$verbose, |c;
+        my $obj = $class.new: :$pod, :$surface, :$margin, :$margin-left, :$margin-right, :$margin-top, :$margin-bottom, :$contents, :$page-numbers, :$verbose, |c;
         $obj!build-index
             if $index && $obj.index;
         $surface.finish;
@@ -52,8 +60,8 @@ our sub pod2pdf(
     $pod,
     :$class = $?CLASS,
     Str() :$save-as = tempfile("POD6-****.pdf", :!unlink)[0],
-    UInt:D :$width  = 612,
-    UInt:D :$height = 792,
+    Numeric:D :$width  = 612,
+    Numeric:D :$height = 792,
     Cairo::Surface::PDF :$surface = Cairo::Surface::PDF.create($save-as, $width, $height);
     Bool :$index = True,
     |c,
@@ -104,7 +112,8 @@ method add-toc-entry(Str:D $Title, UInt:D :$level! is copy, *%link ) {
     @!outline-path.pop while @!outline-path >= $level;
     @!outline-path.push: 0 while  @!outline-path < $level;
     my int32 $parent-id = @!outline-path.reverse.first({$_}) || 0;
-    my int32 $toc-id = $.surface.add_outline: :$parent-id, :$name, |%link;
+    my $toc-id = $.surface.add_outline: :$parent-id, :$name, |%link;
+    
     @!outline-path[$level-1] = $toc-id;
 }
 
@@ -159,7 +168,7 @@ multi method metadata { %!metadata.clone }
 
 From command line:
 
-    =code $ raku --doc=PDF lib/to/class.rakumod --save-as=class.pdf
+    =code $ raku --doc=PDF lib/To/Class.rakumod --save-as=To-Class.pdf
 
 From Raku:
     =begin code :lang<raku>
@@ -193,7 +202,7 @@ Page width in points (default: 592)
 
 Page height in points (default: 792)
 
-=defn --margin=n
+=defn --margin=n --margin-left=n --margin-right=n --margin-top=n --margin-bottom=n
 
 Page margin in points (default: 20)
 

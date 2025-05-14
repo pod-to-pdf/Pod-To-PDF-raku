@@ -20,9 +20,7 @@ my $xml = q{<Document>
       •
     </Lbl>
     <LBody>
-      <P>
-        Abbreviated 1
-      </P>
+      Abbreviated 1
     </LBody>
   </LI>
   <LI>
@@ -30,9 +28,7 @@ my $xml = q{<Document>
       •
     </Lbl>
     <LBody>
-      <P>
-        Abbreviated 2
-      </P>
+      Abbreviated 2
     </LBody>
   </LI>
   <P>
@@ -44,8 +40,32 @@ my $xml = q{<Document>
     </Lbl>
     <LBody>
       <P>
-        Paragraph item
+        Top Item
       </P>
+      <LI>
+        <Lbl>
+          ◦
+        </Lbl>
+        <LBody>
+          First sub-item
+        </LBody>
+      </LI>
+      <LI>
+        <Lbl>
+          ◦
+        </Lbl>
+        <LBody>
+          Second sub-item
+        </LBody>
+      </LI>
+    </LBody>
+  </LI>
+  <LI>
+    <Lbl>
+      •
+    </Lbl>
+    <LBody>
+      Paragraph item
     </LBody>
   </LI>
   <P>
@@ -56,9 +76,7 @@ my $xml = q{<Document>
       •
     </Lbl>
     <LBody>
-      <P>
-        Block item
-      </P>
+      Block item
     </LBody>
   </LI>
   <P>
@@ -69,9 +87,7 @@ my $xml = q{<Document>
       •
     </Lbl>
     <LBody>
-      <P>
-        Abbreviated
-      </P>
+      Abbreviated
     </LBody>
   </LI>
   <LI>
@@ -79,9 +95,7 @@ my $xml = q{<Document>
       •
     </Lbl>
     <LBody>
-      <P>
-        Paragraph item
-      </P>
+      Paragraph item
     </LBody>
   </LI>
   <LI>
@@ -128,6 +142,12 @@ asdf
 =item Abbreviated 2
 
 asdf
+
+=begin item1
+Top Item
+=item2     First sub-item
+=item2     Second sub-item
+=end item1
 
 =for item
 Paragraph

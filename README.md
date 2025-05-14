@@ -13,7 +13,7 @@ Usage
 
 From command line:
 
-    $ raku --doc=PDF lib/to/class.rakumod --save-as=class.pdf
+    $ raku --doc=PDF lib/To/Class.rakumod --save-as=To-Class.pdf
 
 From Raku:
 
@@ -51,7 +51,7 @@ Page width in points (default: 592)
 
 Page height in points (default: 792)
 
-**--margin=n**
+**--margin=n --margin-left=n --margin-right=n --margin-top=n --margin-bottom=n**
 
 
 

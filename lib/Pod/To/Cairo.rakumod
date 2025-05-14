@@ -9,12 +9,16 @@ use Cairo;
 use FontConfig;
 
 subset Level where 0..6;
-my constant Gutter = 1;
+my constant Gutter = 3;
+my constant FooterStyle = Pod::To::Cairo::Style.new: :lines-before(0), :font-size(8);
 
 has UInt $!indent = 0;
-has $.margin = 20;
-has $!gutter-lines = Gutter;
-has UInt $!pad = 0;
+has Numeric $.margin-left;
+has Numeric $.margin-right;
+has Numeric $.margin-top;
+has Numeric $.margin-bottom;
+has UInt:D $!gutter-lines = Gutter;
+has Numeric $!padding = 0;
 has UInt $!page-num = 1;
 has Bool $.page-numbers;
 has HarfBuzz::Font::Cairo %!fonts;
@@ -31,6 +35,7 @@ has %.replace;
 has %.index;
 has $.tag = True;
 has Numeric $!code-start-y;
+has Bool $!float;
 
 enum Tags ( :Artifact<Artifact>, :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Quote<Quote>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
@@ -39,8 +44,8 @@ has $!width  = $!surface.width;
 has $!height = $!surface.height;
 has Cairo::Context $.ctx .= new: $!surface;
 has Pod::To::Cairo::Style $.style handles<font font-size leading line-height bold italic mono underline lines-before link> .= new: :$!ctx;
-has $!tx = $!margin; # text-flow x
-has $!ty = $!margin + self.font-size; # text-flow y
+has $!tx; # text-flow x
+has $!ty; # text-flow y
 
 method !tag-begin($tag) {
     if $!tag {
@@ -83,8 +88,15 @@ method !preload-fonts(@fonts) {
     }
 }
 
-submethod TWEAK(:$pod, :@fonts, :%metadata) {
-    if $!margin < 10 && $!page-numbers {
+submethod TWEAK(:$pod, :@fonts, :%metadata, Numeric:D :$margin = 20) {
+    $!margin-top    //= $margin;
+    $!margin-left   //= $margin;
+    $!margin-bottom //= $margin;
+    $!margin-right  //= $margin;
+    $!tx = $!margin-left;
+    $!ty = $!margin-top + self.font-size;
+
+    if $!margin-bottom < 10 && $!page-numbers {
         note "omitting page-numbers for margin < 10";
         $!page-numbers = False;
     }
@@ -98,12 +110,16 @@ method render(|) {...}
 method metadata($?) is rw { $ }
 method add-toc-entry(Str:D $Title, Str :$dest!, Level :$level! ) { }
 
-multi method pad(&codez) { $.pad; &codez(); $.pad}
-multi method pad($!pad = 2) {}
+multi method block(&codez) { $.pad; &codez(); $.pad}
+multi method pad($!padding = 2*$.line-height) {}
 
 method !pad-here {
-    $.say for ^$!pad;
-    $!pad = 0;
+    if $!padding && !$!float {
+        $!tx  = self!indent;
+        $!ty += $!padding;
+    }
+    $!padding = 0;
+    $!float = False;
     self!ctx;
 }
 
@@ -124,19 +140,20 @@ method !curr-font {
     }
 }
 
-method !style(&codez, Int :$indent, Str :tag($name), Bool :$pad, |c) {
+method !style(&codez, Int :$indent, Str :tag($name), Bool :$block, |c) {
     temp $!style .= clone: |c;
     temp $!indent;
     $!indent += $indent if $indent;
-    $.pad if $pad;
+    $.pad if $block;
     my $rv := $name ?? self!tag($name, &codez) !! &codez();
-    $.pad if $pad;
+    $.pad if $block;
     $rv;
 }
 
 method !height-remaining {
-    $!height - $!ty - $!margin - ($!gutter-lines+1) * $.line-height
+    $!height - $!ty - $!margin-bottom - $!padding - ($!gutter-lines+1) * FooterStyle.line-height
 }
+method !bottom { $!height - $!margin-bottom - ($!gutter-lines-2) * FooterStyle.line-height; }
 
 method !lines-remaining {
     my $line-continuation := $!tx > self!indent;
@@ -146,7 +163,7 @@ method !lines-remaining {
 
 method !text-chunk(
     Str $text,
-    Numeric :$width = $!width - self!indent - $!margin,
+    Numeric :$width = $!width - self!indent - $!margin-right,
     Numeric :$height = self!height-remaining,
     Complex :$flow = ($!tx - self!indent) + 0i;
     |c,
@@ -201,7 +218,7 @@ method print($text is copy, Bool :$nl) {
 
     $!ty += $chunk.lines * $.line-height;
     if $nl {
-        $!tx = $!margin;
+        $!tx = $!margin-left;
     }
     else {
         $!tx = $x + $chunk.flow.re;
@@ -223,22 +240,24 @@ method !finish-page {
     }
 
     if @!footnotes {
-        temp $!style .= new: :lines-before(0); # avoid current styling
+        temp $!style = FooterStyle;
         temp $!indent = 0;
-        $!tx = $!margin;
-        $!ty = $!height - $!margin - $!gutter-lines * $.line-height;
+        temp $!code-start-y = Nil;
+        $!tx = $!margin-left;
+        $!ty = max $!ty - $.line-height / 2, self!bottom;
 
-        self!draw-line($!margin, $!ty, $!width - $!margin, $!ty);
+        self!draw-line($!margin-left, $!ty, $!width - $!margin-right, $!ty);
         temp $!gutter-lines = 0;
+        my $start-page = $!page-num;
 
         self!tag: Paragraph, {
             while @!footnotes {
-                $.pad(1);
+                $!padding = FooterStyle.line-height;
                 my $footnote = @!footnotes.shift;
                 self!style: :tag(Note), {
                     my $y = $footnote.shift;
                     my $ind = $footnote.shift;
-                    my %link = :page($!page-num), :pos[$!margin, $y];
+                    my %link = :page($!page-num), :pos[$!margin-bottom, $y];
                     self!style: :tag(Label), :%link, {
                         $.print($ind); #[n]
                     }
@@ -249,6 +268,13 @@ method !finish-page {
                 }
             }
         }
+        unless $!page-num == $start-page {
+            # page break in footnotes. draw closing HR
+            $.say;
+            my $y = $!ty - $.line-height / 2;
+            self!draw-line($!margin-left, $y, $.width - $!margin-right, $y);
+        }
+
     }
     self!number-page()
         if !$!blank-page && $!page-numbers;
@@ -263,8 +289,8 @@ method !number-page {
     unless $!page-num == $!last-page-num {
         my $text = $!page-num.Str;
         my Pod::To::Cairo::TextChunk $chunk .= new: :$text, :$font, :$style;
-        my $x = $.width - $!margin - $chunk.content-width;
-        my $y = $.height - $!margin + $font-size;
+        my $x = $.width - $!margin-right - $chunk.content-width;
+        my $y = $.height - $!margin-bottom + $font-size;
         self!artifact: {
             $chunk.print: :$x, :$y, :$!ctx;
         }
@@ -277,8 +303,8 @@ method !new-page {
     $!gutter-lines = Gutter;
      unless $!blank-page {
          $!surface.show_page;
-         $!tx  = self!indent;
-         $!ty  = $!margin + $.font-size;
+         $!tx = self!indent;
+         $!ty = $!margin-top + $.font-size;
          $!page-num++;
          $!blank-page = True;
      }
@@ -288,8 +314,9 @@ method !ctx {
     if self!lines-remaining < $.lines-before {
         self!new-page;
     }
-    elsif $!tx > $!margin && $!tx > $!width - self!indent {
+    elsif $!width && $!tx > $!width - $!margin-right {
         self.say;
+        $!tx = $!margin-left;
     }
     $!ctx;
 }
@@ -340,7 +367,7 @@ method !table-row(@row, @widths, Bool :$header) {
             self!ctx;
             my $tab = self!indent;
             my $row-height = 0;
-            my $height = $!surface.height - $!ty - $!margin;
+            my $height = $!surface.height - $!ty - $!margin-bottom;
             my $cell-tag = $header ?? TableHeader !! TableData;
             my $head-space = $.line-height - $.font-size;
 
@@ -388,7 +415,7 @@ method !table-cell($pod) {
 
 method !build-table($pod, @table) {
     my $x0 = self!indent;
-    my \total-width = $!width - $x0 - $!margin;
+    my \total-width = $!width - $x0 - $!margin-right;
     @table = ();
 
     self!style: :bold, :lines-before(3), {
@@ -410,7 +437,7 @@ method !build-table($pod, @table) {
 multi method pod2pdf(Pod::Block::Table $pod) {
     my @widths = self!build-table: $pod, my @table;
 
-    self!style: :lines-before(3), :pad, {
+    self!style: :lines-before(3), :block, {
         self!tag: Table, {
             if $pod.caption -> $caption {
                 self!style: :tag(Caption), :italic, {
@@ -450,10 +477,10 @@ method !gen-dest-name($title, $seq = '') {
     }
 }
 
-method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <= 1, Bool :$toc = True, :$!pad = 2) {
+method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <= 1, Bool :$toc = True, :$!padding = 2 * $.line-height) {
     my constant HeadingSizes = 24, 20, 16, 13, 11.5, 10, 10;
     my $font-size = HeadingSizes[$level];
-    my Bool $bold   = $level <= 4;
+    my Bool $bold = $level <= 4;
     my Bool $italic;
     my $lines-before = $.lines-before;
 
@@ -466,7 +493,9 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
 
     $pod .= &strip-para;
 
-    my $tag = 'H' ~ ($level||1);
+    my $tag = $level
+               ?? 'H' ~ $level
+               !! 'H1';
     self!style: :$tag, :$font-size, :$bold, :$italic, :$underline, :$lines-before, {
 
         my Str $Title = $.pod2text-inline($pod);
@@ -482,19 +511,16 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
 }
 
 # artifacts started working between v1.16.0 < cairo <= v1.17.0
-# todo: further bisection
-my $artifacts-enabled = Cairo::version() >= v1.17.0;
+my $have-artifact = Cairo::version() >= v1.17.0;
 method !artifact(&code) {
-    $!ctx.tag_begin(Artifact) if $artifacts-enabled;
-    &code();
-    $!ctx.tag_end(Artifact) if $artifacts-enabled;
+    $have-artifact ?? self!tag(Artifact, &code) !! &code();
 }
 
 method !finish-code {
     my constant pad = 5;
     with $!code-start-y -> $y0 {
         my $x0 = self!indent;
-        my $width = $!surface.width - $!margin - $x0 - 2*pad;
+        my $width = $!surface.width - $!margin-right - $x0 - 2*pad;
         self!artifact: {
             given $!ctx {
                 .save;
@@ -517,7 +543,7 @@ method !code(@contents is copy) {
 
     self!ctx;
 
-    self!style: :mono, :indent, :tag(CODE), :lines-before(0), :pad, {
+    self!style: :mono, :indent, :tag(CODE), :lines-before(0), :block, {
         self!pad-here;
         my @plain-text;
 
@@ -546,7 +572,7 @@ method !code(@contents is copy) {
 }
 
 multi method pod2pdf(Pod::Block::Named $pod) {
-    $.pad: {
+    $.block: {
         given $pod.name {
             when 'pod'  { $.pod2pdf($pod.contents)     }
             when 'para' {
@@ -583,9 +609,9 @@ multi method pod2pdf(Pod::Block::Named $pod) {
 }
 
 multi method pod2pdf(Pod::Item $pod) {
-    $.pad: {
+    $.block: {
         my Level $list-level = min($pod.level // 1, 3);
-        self!style: :tag(ListItem), :pad, :indent($list-level), {
+        self!style: :tag(ListItem), :block, :indent($list-level), {
             {
                 my constant BulletPoints = ("\c[BULLET]",
                                             "\c[WHITE BULLET]",
@@ -596,18 +622,19 @@ multi method pod2pdf(Pod::Item $pod) {
                 }
             }
 
-            # slightly iffy $!ty fixup
-            $!ty -= 2 * $.line-height;
+            # omit any leading vertical padding in the list-body
+            $!float = True;
 
             self!style: :tag(ListBody), :indent, {
-                $.pod2pdf($pod.contents);
+                $!tx = self!indent;
+                $.pod2pdf($pod.contents.&strip-para);
             }
         }
     }
 }
 
 multi method pod2pdf(Pod::Block::Code $pod) {
-    self!style: :pad, :tag(Paragraph), :lines-before(3), {
+    self!style: :block, :tag(Paragraph), :lines-before(3), {
         self!code: $pod.contents;
     }
 }
@@ -622,14 +649,14 @@ multi sub strip-para(Pod::Block::Para $_) {
 multi sub strip-para($_) { $_ }
 
 multi method pod2pdf(Pod::Heading $pod) {
-    $.pad: {
+    $.block: {
         $!level = min($pod.level, 6);
         self!heading: $pod.contents;
     }
 }
 
 multi method pod2pdf(Pod::Block::Para $pod) {
-    $.pad: {
+    $.block: {
         self!style: :tag(Paragraph), {
             $.pod2pdf($pod.contents);
         }
@@ -672,7 +699,7 @@ method !replace(Pod::FormattingCode $pod where .type eq 'R', &continue) {
 
     my $rv := &continue($new-pod);
 
-    %!replacing{$place-holder}:delete;;
+    %!replacing{$place-holder}:delete;
     $rv;
 }
 
@@ -705,21 +732,27 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
         }
         when 'N' {
             # rough positioning to footnote area
-            my @pos = $!margin, $!height - $!margin - (Gutter+2) * $.line-height;
-            my %link = :page($!page-num), :@pos;
             my $ind = '[' ~ @!footnotes+1 ~ ']';
-            self!tag: Reference, {
-                self!style: :tag(Label), :%link, {  $.pod2pdf($ind); }
-            }
             my @contents = $!ty - $.line-height, $ind, $pod.contents.Slip;
-            @!footnotes.push: @contents;
-            do {
-                # pre-compute footnote size 
-                temp $!style .= new;
-                temp $!tx = $!margin;
-                temp $!ty = $!margin;
+             my UInt:D $footnote-lines = do {
+                # pre-compute footnote size
+                temp $!style = FooterStyle;
+                temp $!tx = $!margin-left;
+                temp $!ty = $!margin-top;
+                temp $!indent = 0;
                 my $draft-footnote = $ind ~ $.pod2text-inline($pod.contents);
-                $!gutter-lines += self!text-chunk($draft-footnote).lines;
+                +self!text-chunk($draft-footnote).lines;
+            }
+            # force a page break, unless there's room for both the reference and the footnote
+            # on the current page
+            self!new-page
+                unless self!height-remaining > ($footnote-lines+1) * FooterStyle.line-height;
+            $!gutter-lines += $footnote-lines;
+            @!footnotes.push: @contents;
+            self!tag: Reference, {
+                my @pos = $!margin-left, self!bottom;
+                my %link = :page($!page-num), :@pos;
+                self!style: :tag(Label), :%link, {  $.pod2pdf($ind); }
             }
         }
         when 'U' {
@@ -852,22 +885,22 @@ multi method pod2pdf(Pod::Block::Declarator $pod) {
     my $decl = %spec<decl>  // $type;
     my $code = %spec<code>  // $w.raku;
 
-    self!style: :lines-before(3), :pad, {
+    self!style: :lines-before(3), :block, {
         self!heading($type.tclc ~ ' ' ~ $name, :$level);
 
         if $pod.leading -> $leading {
-            self!style: :pad, :tag(Paragraph), {
+            self!style: :block, :tag(Paragraph), {
                 $.pod2pdf($leading);
             }
         }
 
-        self!style: :pad, :tag(Paragraph), {
+        self!style: :block, :tag(Paragraph), {
             self!code: [$decl ~ ' ' ~ $code];
         }
 
         if $pod.trailing -> $trailing {
             $.pad;
-            self!style: :pad, :tag(Paragraph), {
+            self!style: :block, :tag(Paragraph), {
                 $.pod2pdf($trailing);
             }
         }
@@ -939,7 +972,7 @@ method !draw-line($x0, $y0, $x1, $y1 = $y0, :$linewidth = 1) {
     }
 }
 
-method !indent { $!margin + 10 * $!indent; }
+method !indent { $!margin-left + 10 * $!indent; }
 
 method pod2text-inline($pod) {
     $.pod2text($pod).subst(/\s+/, ' ', :g);
