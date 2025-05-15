@@ -241,7 +241,7 @@ Add page numbers (bottom right)
 =defn --page-style
 
 =begin code :lang<raku>
--raku --doc=PDF::Lite lib/to/class.rakumod --page-style='margin:10px 20px; width:200pt; height:500pt" --save-as=class.pdf
+-raku --doc=PDF lib/to/class.rakumod --page-style='margin:10px 20px; width:200pt; height:500pt" --save-as=class.pdf
 =end code
 
 Perform CSS C<@page> like styling of pages. At the moment, only margins (C<margin>, C<margin-left>, C<margin-top>, C<margin-bottom>, C<margin-right>) and the page C<width> and C<height> can be set. The optional [CSS::Properties](https://css-raku.github.io/CSS-Properties-raku/) module needs to be installed to use this option.
