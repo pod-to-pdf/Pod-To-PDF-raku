@@ -28,7 +28,7 @@
   "raku": "6.*",
   "resources": [
   ],
-  "source-url": "git://github.com/pod-to-pdf/Pod-To-PDF-raku.git",
+  "source-url": "https://github.com/pod-to-pdf/Pod-To-PDF-raku.git",
   "tags": [
     "pdf",
     "svg",
@@ -38,5 +38,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.1.6"
+  "version": "0.1.7"
 }
