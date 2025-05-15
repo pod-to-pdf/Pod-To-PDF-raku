@@ -244,7 +244,7 @@ method !finish-page {
         temp $!indent = 0;
         temp $!code-start-y = Nil;
         $!tx = $!margin-left;
-        $!ty = max $!ty - $.line-height / 2, self!bottom;
+        $!ty = self!bottom;
 
         self!draw-line($!margin-left, $!ty, $!width - $!margin-right, $!ty);
         temp $!gutter-lines = 0;
@@ -283,12 +283,13 @@ method !finish-page {
 
 has $!last-page-num = 0;
 method !number-page {
-    my $font-size := 8;
-    my Pod::To::Cairo::Style $style .= new: :$font-size;
-    my HarfBuzz::Font::Cairo $font = self!curr-font;
     unless $!page-num == $!last-page-num {
+        my $font-size := 8;
+        $!style .= new: :$font-size;
+        my HarfBuzz::Font::Cairo $font = self!curr-font;
         my $text = $!page-num.Str;
-        my Pod::To::Cairo::TextChunk $chunk .= new: :$text, :$font, :$style;
+
+        my Pod::To::Cairo::TextChunk $chunk .= new: :$text, :$font, :$!style;
         my $x = $.width - $!margin-right - $chunk.content-width;
         my $y = $.height - $!margin-bottom + $font-size;
         self!artifact: {
