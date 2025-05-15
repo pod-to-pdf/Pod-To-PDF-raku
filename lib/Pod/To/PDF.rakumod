@@ -13,6 +13,16 @@ submethod TWEAK(Str :$title, Str :$lang = 'en') {
     self.surface.set_metadata(CAIRO_PDF_METADATA_CREATOR, "Raku {self.^name} v{self.^ver}");
 }
 
+sub apply-page-styling($style, *%props) {
+    CATCH {
+        when X::CompUnit::UnsatisfiedDependency {
+            note "Ignoring --page-style argument; Please install CSS::Properties"
+        }
+    }
+    my $css = (require ::('CSS::Properties')).new: :$style;
+    %props{.key} = .value for $css.Hash;
+}
+
 method render(
     $class: $pod,
     Str :$save-as  is copy,
@@ -31,6 +41,7 @@ method render(
 ) {
     state %cache{Any};
     %cache{$pod} //= do {
+        my Bool $show-usage;
         for @*ARGS {
             when /^'--page-numbers'$/  { $page-numbers = True }
             when /^'--/index'$/        { $index  = False }
@@ -39,13 +50,22 @@ method render(
             when /^'--width='(\d+)$/   { $width  = $0.Int }
             when /^'--height='(\d+)$/  { $height = $0.Int }
             when /^'--margin='(\d+)$/  { $margin = $0.Int }
-           when /^'--margin-top='(\d+)$/     { $margin-top = $0.Int }
+            when /^'--margin-top='(\d+)$/     { $margin-top = $0.Int }
             when /^'--margin-bottom='(\d+)$/  { $margin-bottom = $0.Int }
             when /^'--margin-left='(\d+)$/    { $margin-left = $0.Int }
             when /^'--margin-right='(\d+)$/   { $margin-right = $0.Int }
+            when /^'--page-style='(.+)$/    {
+                apply-page-styling(
+                    $0.Str,
+                    :$width, :$height,
+                    :$margin-top, :$margin-bottom, :$margin-left, :$margin-right,
+                           )
+            }
             when /^'--save-as='(.+)$/  { $save-as = $0.Str }
-            default { note "ignoring $_ argument" }
+            default {  $show-usage = True; note "ignoring $_ argument" }
         }
+        note '(valid options are: --save-as= --page-numbers --width= --height= --margin[-left|-right|-top|-bottom]= --page-style= --/index --/contents)'
+            if $show-usage;
         $save-as //= tempfile("POD6-****.pdf", :!unlink)[0];
         my Cairo::Surface::PDF $surface .= create($save-as, $width, $height);
         my $obj = $class.new: :$pod, :$surface, :$margin, :$margin-left, :$margin-right, :$margin-top, :$margin-bottom, :$contents, :$page-numbers, :$verbose, |c;
@@ -217,6 +237,14 @@ Disable index of terms
 =defn --page-numbers
 
 Add page numbers (bottom right)
+
+=defn --page-style
+
+=begin code :lang<raku>
+-raku --doc=PDF::Lite lib/to/class.rakumod --page-style='margin:10px 20px; width:200pt; height:500pt" --save-as=class.pdf
+=end code
+
+Perform CSS C<@page> like styling of pages. At the moment, only margins (C<margin>, C<margin-left>, C<margin-top>, C<margin-bottom>, C<margin-right>) and the page C<width> and C<height> can be set. The optional [CSS::Properties](https://css-raku.github.io/CSS-Properties-raku/) module needs to be installed to use this option.
 
 =begin Exports
 

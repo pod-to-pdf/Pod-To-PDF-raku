@@ -285,7 +285,7 @@ has $!last-page-num = 0;
 method !number-page {
     unless $!page-num == $!last-page-num {
         my $font-size := 8;
-        $!style .= new: :$font-size;
+        temp $!style .= new: :$font-size;
         my HarfBuzz::Font::Cairo $font = self!curr-font;
         my $text = $!page-num.Str;
 
@@ -734,8 +734,7 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
         when 'N' {
             # rough positioning to footnote area
             my $ind = '[' ~ @!footnotes+1 ~ ']';
-            my @contents = $!ty - $.line-height, $ind, $pod.contents.Slip;
-             my UInt:D $footnote-lines = do {
+            my UInt:D $footnote-lines = do {
                 # pre-compute footnote size
                 temp $!style = FooterStyle;
                 temp $!tx = $!margin-left;
@@ -744,10 +743,13 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                 my $draft-footnote = $ind ~ $.pod2text-inline($pod.contents);
                 +self!text-chunk($draft-footnote).lines;
             }
-            # force a page break, unless there's room for both the reference and the footnote
-            # on the current page
-            self!new-page
-                unless self!height-remaining > ($footnote-lines+1) * FooterStyle.line-height;
+            unless self!height-remaining > ($footnote-lines+1) * FooterStyle.line-height {
+                # force a page break, unless there's room for both the reference and
+                # the footnote on the current page
+                self!new-page;
+                $ind = '[1]'; # first footnote on the new page
+            }
+            my @contents = $!ty - $.line-height, $ind, $pod.contents.Slip;
             $!gutter-lines += $footnote-lines;
             @!footnotes.push: @contents;
             self!tag: Reference, {
