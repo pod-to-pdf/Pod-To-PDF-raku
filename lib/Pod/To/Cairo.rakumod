@@ -37,7 +37,7 @@ has $.tag = True;
 has Numeric $!code-start-y;
 has Bool $!float;
 
-enum Tags ( :Artifact<Artifact>, :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Quote<Quote>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
+enum Tags ( :Artifact<Artifact>, :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :LIST<L>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Quote<Quote>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
 has Cairo::Surface:D $.surface is required handles <width height>;
 has $!width  = $!surface.width;
@@ -47,24 +47,26 @@ has Pod::To::Cairo::Style $.style handles<font font-size leading line-height bol
 has $!tx; # text-flow x
 has $!ty; # text-flow y
 
-method !tag-begin($tag) {
+method !open-tag($tag) {
     if $!tag {
         $!ctx.tag_begin($tag);
         @!tags.push: $tag;
     }
 }
 
-method !tag-end {
+method !close-tag {
     if $!tag {
         my Str:D $tag = @!tags.pop;
         $!ctx.tag_end($tag);
     }
 }
 
-method !tag($tag, &codez) {
-    self!tag-begin($tag);
+method !tag(Str:D $tag, &codez) {
+    my $level = @!tags.elems;
+    self!open-tag($tag);
     &codez();
-    self!tag-end;
+    self!close-tag
+        while @!tags.elems > $level;
 }
 
 method read($pod) {
@@ -285,7 +287,7 @@ has $!last-page-num = 0;
 method !number-page {
     unless $!page-num == $!last-page-num {
         my $font-size := 8;
-        temp $!style .= new: :$font-size;
+        temp $!style = FooterStyle;
         my HarfBuzz::Font::Cairo $font = self!curr-font;
         my $text = $!page-num.Str;
 
@@ -317,7 +319,6 @@ method !ctx {
     }
     elsif $!width && $!tx > $!width - $!margin-right {
         self.say;
-        $!tx = $!margin-left;
     }
     $!ctx;
 }
@@ -610,26 +611,24 @@ multi method pod2pdf(Pod::Block::Named $pod) {
 }
 
 multi method pod2pdf(Pod::Item $pod) {
-    $.block: {
-        my Level $list-level = min($pod.level // 1, 3);
-        self!style: :tag(ListItem), :block, :indent($list-level), {
-            {
-                my constant BulletPoints = ("\c[BULLET]",
-                                            "\c[WHITE BULLET]",
-                                            '-');
-                my Str $bp = BulletPoints[$list-level - 1];
-                self!style: :tag(Label), {
-                    $.print: $bp;
-                }
+    my Level $list-level = min($pod.level // 1, 3);
+    self!style: :tag(ListItem), :block, :indent($list-level), {
+        {
+            my constant BulletPoints = ("\c[BULLET]",
+                                        "\c[WHITE BULLET]",
+                                        '-');
+            my Str $bp = BulletPoints[$list-level - 1];
+            self!style: :tag(Label), {
+                $.print: $bp;
             }
+        }
 
-            # omit any leading vertical padding in the list-body
-            $!float = True;
+        # omit any leading vertical padding in the list-body
+        $!float = True;
 
-            self!style: :tag(ListBody), :indent, {
-                $!tx = self!indent;
-                $.pod2pdf($pod.contents.&strip-para);
-            }
+        self!style: :tag(ListBody), :indent, :!block, {
+            $!tx = self!indent;
+            $.pod2pdf($pod.contents.&strip-para);
         }
     }
 }
