@@ -30,6 +30,7 @@ jobs:
         run: |
           sudo apt-get install -y libfribidi-dev
           sudo apt-get install -y libharfbuzz-dev
+          sudo apt-get install -y libfontconfig1-dev
       - name: macOS specific setup
         if: contains(matrix.os, 'macOS')
         run: |
