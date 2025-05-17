@@ -937,15 +937,13 @@ multi method pod2pdf(Str $pod) {
 }
 
 method !nest-list(@lists, $level) {
+    while @lists && @lists.tail > $level {
+        self!close-tag;
+        @lists.pop;
+    }
     if $level && (!@lists || @lists.tail < $level) {
         self!open-tag(LIST);
         @lists.push: $level;
-    }
-    else {
-        while @lists && @lists.tail > $level {
-            self!close-tag;
-            @lists.pop;
-        }
     }
 }
 
