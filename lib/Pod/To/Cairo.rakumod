@@ -936,8 +936,26 @@ multi method pod2pdf(Str $pod) {
     }
 }
 
+method !nest-list(@lists, $level) {
+    if $level && (!@lists || @lists.tail < $level) {
+        self!open-tag(LIST);
+        @lists.push: $level;
+    }
+    else {
+        while @lists && @lists.tail > $level {
+            self!close-tag;
+            @lists.pop;
+        }
+    }
+}
+
 multi method pod2pdf(List:D $pod) {
-    $.pod2pdf($_) for $pod.List;
+    my @lists;
+    for $pod.list {
+        self!nest-list(@lists, .isa(Pod::Item) ?? .level !! 0);
+        $.pod2pdf($_);
+    }
+    self!nest-list(@lists, 0);
 }
 
 multi method pod2pdf($pod) {

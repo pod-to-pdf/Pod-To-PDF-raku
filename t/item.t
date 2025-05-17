@@ -15,105 +15,115 @@ my $xml = q{<Document>
   <P>
     asdf
   </P>
-  <LI>
-    <Lbl>
-      •
-    </Lbl>
-    <LBody>
-      Abbreviated 1
-    </LBody>
-  </LI>
-  <LI>
-    <Lbl>
-      •
-    </Lbl>
-    <LBody>
-      Abbreviated 2
-    </LBody>
-  </LI>
+  <L>
+    <LI>
+      <Lbl>
+        •
+      </Lbl>
+      <LBody>
+        Abbreviated 1
+      </LBody>
+    </LI>
+    <LI>
+      <Lbl>
+        •
+      </Lbl>
+      <LBody>
+        Abbreviated 2
+      </LBody>
+    </LI>
+  </L>
   <P>
     asdf
   </P>
-  <LI>
-    <Lbl>
-      •
-    </Lbl>
-    <LBody>
-      <P>
-        Top Item
-      </P>
-      <LI>
-        <Lbl>
-          ◦
-        </Lbl>
-        <LBody>
-          First sub-item
-        </LBody>
-      </LI>
-      <LI>
-        <Lbl>
-          ◦
-        </Lbl>
-        <LBody>
-          Second sub-item
-        </LBody>
-      </LI>
-    </LBody>
-  </LI>
-  <LI>
-    <Lbl>
-      •
-    </Lbl>
-    <LBody>
-      Paragraph item
-    </LBody>
-  </LI>
+  <L>
+    <LI>
+      <Lbl>
+        •
+      </Lbl>
+      <LBody>
+        <P>
+          Top Item
+        </P>
+        <L>
+          <LI>
+            <Lbl>
+              ◦
+            </Lbl>
+            <LBody>
+              First sub-item
+            </LBody>
+          </LI>
+          <LI>
+            <Lbl>
+              ◦
+            </Lbl>
+            <LBody>
+              Second sub-item
+            </LBody>
+          </LI>
+        </L>
+      </LBody>
+    </LI>
+    <LI>
+      <Lbl>
+        •
+      </Lbl>
+      <LBody>
+        Paragraph item
+      </LBody>
+    </LI>
+  </L>
   <P>
     asdf
   </P>
-  <LI>
-    <Lbl>
-      •
-    </Lbl>
-    <LBody>
-      Block item
-    </LBody>
-  </LI>
-  <P>
-    asdf
-  </P>
-  <LI>
-    <Lbl>
-      •
-    </Lbl>
-    <LBody>
-      Abbreviated
-    </LBody>
-  </LI>
-  <LI>
-    <Lbl>
-      •
-    </Lbl>
-    <LBody>
-      Paragraph item
-    </LBody>
-  </LI>
-  <LI>
-    <Lbl>
-      •
-    </Lbl>
-    <LBody>
-      <P>
+  <L>
+    <LI>
+      <Lbl>
+        •
+      </Lbl>
+      <LBody>
         Block item
-      </P>
-      <P>
-        with multiple
-      </P>
-      <P>
-        paragraphs
-      </P>
-    </LBody>
-  </LI>
+      </LBody>
+    </LI>
+  </L>
+  <P>
+    asdf
+  </P>
+  <L>
+    <LI>
+      <Lbl>
+        •
+      </Lbl>
+      <LBody>
+        Abbreviated
+      </LBody>
+    </LI>
+    <LI>
+      <Lbl>
+        •
+      </Lbl>
+      <LBody>
+        Paragraph item
+      </LBody>
+    </LI>
+    <LI>
+      <Lbl>
+        •
+      </Lbl>
+      <LBody>
+        <P>
+          Block item
+        </P>
+        <P>
+          with multiple
+        </P>
+        <P>
+          paragraphs
+        </P>
+      </LBody>
+    </LI>
+  </L>
   <P>
     asdf
   </P>
