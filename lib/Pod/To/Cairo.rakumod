@@ -25,11 +25,10 @@ has HarfBuzz::Font::Cairo %!fonts;
 has HarfBuzz::Font::Cairo $!cur-font;
 has Str $!cur-font-patt = '';
 my class PageFootNote {
-    has Str:D $.text is required;
+    has @.contents is required;
     has Int:D $.num is rw is required;
     has Numeric:D $.y is required;
     method ind { '[' ~ $!num ~ ']' }
-    method Str { $.ind ~ $!text }
 }
 has PageFootNote @!footnotes;
 has Bool $.contents = True;
@@ -270,7 +269,7 @@ method !finish-page {
                     }
                     $!tx += 3;
                     self!tag: Paragraph, {
-                        $.print($footnote.text);
+                        $.pod2pdf($footnote.contents);
                     }
                 }
             }
@@ -738,7 +737,7 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
         when 'N' {
             # rough positioning to footnote area
             my PageFootNote:D $footnote .= new(
-                :text($pod.contents.head),
+                :contents($pod.contents),
                 :num(@!footnotes+1),
                 :y($!ty - $.line-height),
             );
@@ -748,7 +747,10 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                 temp $!tx = $!margin-left;
                 temp $!ty = $!margin-top;
                 temp $!indent = 0;
-                +self!text-chunk($footnote.Str).lines;
+                given $footnote {
+                    my $draft-text = .ind ~ $.pod2text-inline(.contents);
+                    +self!text-chunk($draft-text).lines;
+                }
             }
             unless self!height-remaining > ($footnote-lines+1) * FooterStyle.line-height {
                 # force a page break, unless there's room for both the reference and
