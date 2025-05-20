@@ -3,7 +3,7 @@ Revision history for Pod-To-PDF
 {{$NEXT}}
 
 0.1.8  2025-05-18T08:00:51+12:00
-    - Fix footnote numbering following forced page-break
+    - Fix footnote numbering, following forced page-break
     - Add implicit list ('L') tags around series of list
       items (tagged 'LI') for tagged-PDF conformance.
 

@@ -24,7 +24,14 @@ has Bool $.page-numbers;
 has HarfBuzz::Font::Cairo %!fonts;
 has HarfBuzz::Font::Cairo $!cur-font;
 has Str $!cur-font-patt = '';
-has @!footnotes;
+my class PageFootNote {
+    has Str:D $.text is required;
+    has Int:D $.num is rw is required;
+    has Numeric:D $.y is required;
+    method ind { '[' ~ $!num ~ ']' }
+    method Str { $.ind ~ $!text }
+}
+has PageFootNote @!footnotes;
 has Bool $.contents = True;
 has Bool $.verbose;
 has Bool $!blank-page = True;
@@ -255,17 +262,15 @@ method !finish-page {
         self!tag: Paragraph, {
             while @!footnotes {
                 $!padding = FooterStyle.line-height;
-                my $footnote = @!footnotes.shift;
+                my PageFootNote $footnote = @!footnotes.shift;
                 self!style: :tag(Note), {
-                    my $y = $footnote.shift;
-                    my $ind = $footnote.shift;
-                    my %link = :page($!page-num), :pos[$!margin-bottom, $y];
+                    my %link = :page($!page-num), :pos[$!margin-bottom, $footnote.y];
                     self!style: :tag(Label), :%link, {
-                        $.print($ind); #[n]
+                        $.print($footnote.ind); #[n]
                     }
                     $!tx += 3;
                     self!tag: Paragraph, {
-                        $.pod2pdf($footnote);
+                        $.print($footnote.text);
                     }
                 }
             }
@@ -732,29 +737,31 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
         }
         when 'N' {
             # rough positioning to footnote area
-            my $ind = '[' ~ @!footnotes+1 ~ ']';
-            my UInt:D $footnote-lines = do {
+            my PageFootNote:D $footnote .= new(
+                :text($pod.contents.head),
+                :num(@!footnotes+1),
+                :y($!ty - $.line-height),
+            );
+             my UInt:D $footnote-lines = do {
                 # pre-compute footnote size
                 temp $!style = FooterStyle;
                 temp $!tx = $!margin-left;
                 temp $!ty = $!margin-top;
                 temp $!indent = 0;
-                my $draft-footnote = $ind ~ $.pod2text-inline($pod.contents);
-                +self!text-chunk($draft-footnote).lines;
+                +self!text-chunk($footnote.Str).lines;
             }
             unless self!height-remaining > ($footnote-lines+1) * FooterStyle.line-height {
                 # force a page break, unless there's room for both the reference and
                 # the footnote on the current page
                 self!new-page;
-                $ind = '[1]'; # first footnote on the new page
+                $footnote.num = 1; # first footnote on the new page
             }
-            my @contents = $!ty - $.line-height, $ind, $pod.contents.Slip;
             $!gutter-lines += $footnote-lines;
-            @!footnotes.push: @contents;
+            @!footnotes.push: $footnote;
             self!tag: Reference, {
                 my @pos = $!margin-left, self!bottom;
                 my %link = :page($!page-num), :@pos;
-                self!style: :tag(Label), :%link, {  $.pod2pdf($ind); }
+                self!style: :tag(Label), :%link, {  $.print($footnote.ind); }
             }
         }
         when 'U' {
