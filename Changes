@@ -1,6 +1,8 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+
+0.1.9  2025-05-22T08:14:13+12:00
     - Create internal PageFootNote class
     - Add --compress option. This requires installation of the optional
       Compress::PDF Raku module.

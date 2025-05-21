@@ -1,4 +1,4 @@
-unit class Pod::To::PDF:ver<0.1.8>;
+unit class Pod::To::PDF:ver<0.1.9>;
 
 use Pod::To::Cairo;
 also is Pod::To::Cairo;
@@ -17,7 +17,7 @@ submethod TWEAK(Str :$title, Str :$lang = 'en') {
 sub apply-page-styling($style, *%props) {
     CATCH {
         when X::CompUnit::UnsatisfiedDependency {
-            note "Ignoring --page-style argument; Please install CSS::Properties"
+            note "Ignoring --page-style argument; Please install the Raku CSS::Properties module."
         }
     }
     my $css = (require ::('CSS::Properties')).new: :$style;
@@ -27,7 +27,7 @@ sub apply-page-styling($style, *%props) {
 sub apply-pdf-compression($pdf-file is rw) {
     CATCH {
         when X::CompUnit::UnsatisfiedDependency {
-            note "Ignoring --compress argument; Please install Compress::PDF"
+            note "Ignoring --compress argument; Please install the Raku Compress::PDF module."
         }
     }
     require ::('Compress::PDF');
@@ -80,7 +80,7 @@ method render(
             when /^'--save-as='(.+)$/  { $save-as = $0.Str }
             default {  $show-usage = True; note "ignoring $_ argument" }
         }
-        note '(valid options are: --save-as= --page-numbers --width= --height= --margin[-left|-right|-top|-bottom]= --page-style= --/index --/contents)'
+        note '(valid options are: --save-as= --page-numbers --width= --height= --margin[-left|-right|-top|-bottom]= --page-style= --/index --/contents --compress)'
             if $show-usage;
         $save-as //= tempfile("POD6-****.pdf", :!unlink)[0];
         my Cairo::Surface::PDF $surface .= create($save-as, $width, $height);
