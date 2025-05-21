@@ -75,6 +75,12 @@ Disable index of terms
 
 Add page numbers (bottom right)
 
+**--compress**
+
+
+
+Compress the rendered PDF. The optional [Compress::PDF](https://raku.land/zef:tbrowder/Compress::PDF) module needs to be installed to use this option.
+
 **--page-style**
 
 
@@ -185,7 +191,7 @@ my $author = 'David Warring';
 my $description = "sample Pod with replaced content";
 my %replace = :$date, :$title, :$author, :$description;
 my $renderer = pod2pdf($=pod, :%replace, :save-as<replace-example.pdf>);
-$renderer.finish(); 
+$renderer.finish();
 
 =begin pod
 =TITLE R<title>
@@ -206,7 +212,7 @@ Please check these module's installation instructions.
 Testing
 =======
 
-Note that installation of the [PDF::Tags::Reader](PDF::Tags::Reader) module enables structural testing. 
+Note that installation of the [PDF::Tags::Reader](PDF::Tags::Reader) module enables structural testing.
 
 For example, to test this module from source.
 

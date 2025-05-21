@@ -1,6 +1,9 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+    - Create internal PageFootNote class
+    - Add --compress option. This requires installation of the optional
+      Compress::PDF Raku module.
 
 0.1.8  2025-05-18T08:00:51+12:00
     - Fix footnote numbering, following forced page-break

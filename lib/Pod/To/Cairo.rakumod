@@ -752,7 +752,7 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                     +self!text-chunk($draft-text).lines;
                 }
             }
-            unless self!height-remaining > ($footnote-lines+1) * FooterStyle.line-height {
+            unless self!height-remaining > ($footnote-lines+Gutter) * FooterStyle.line-height {
                 # force a page break, unless there's room for both the reference and
                 # the footnote on the current page
                 self!new-page;

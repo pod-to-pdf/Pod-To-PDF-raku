@@ -23,6 +23,19 @@ sub apply-page-styling($style, *%props) {
     %props{.key} = .value for $css.Hash;
 }
 
+sub apply-pdf-compression($pdf-file is rw) {
+    CATCH {
+        when X::CompUnit::UnsatisfiedDependency {
+            note "Ignoring --compress argument; Please install Compress::PDF"
+        }
+    }
+    require ::('Compress::PDF');
+    my $outpdf = $pdf-file.subst(/:i '.pdf'? $/, '-150dpi.pdf');
+    $outpdf = ::('Compress::PDF::EXPORT::DEFAULT::&compress')($pdf-file, :$outpdf, :force);
+    unlink $pdf-file unless $pdf-file eq $outpdf;
+    $pdf-file = $outpdf;
+}
+
 method render(
     $class: $pod,
     Str :$save-as  is copy,
@@ -37,6 +50,7 @@ method render(
     Bool :$contents is copy = True,
     Bool :$page-numbers is copy,
     Bool :$verbose is copy,
+    Bool :$compress is copy,
     |c,
 ) {
     state %cache{Any};
@@ -44,8 +58,9 @@ method render(
         my Bool $show-usage;
         for @*ARGS {
             when /^'--page-numbers'$/  { $page-numbers = True }
-            when /^'--/index'$/        { $index  = False }
+            when /^'--/index'$/        { $index    = False }
             when /^'--verbose'$/       { $verbose  = True }
+            when /^'--compress'$/      { $compress = True }
             when /^'--/'[toc|['table-of-']?contents]$/ { $contents  = False }
             when /^'--width='(\d+)$/   { $width  = $0.Int }
             when /^'--height='(\d+)$/  { $height = $0.Int }
@@ -72,6 +87,10 @@ method render(
         $obj!build-index
             if $index && $obj.index;
         $surface.finish;
+
+        apply-pdf-compression($save-as)
+            if $compress;
+
         $save-as;
     }
 }
@@ -133,7 +152,6 @@ method add-toc-entry(Str:D $Title, UInt:D :$level! is copy, *%link ) {
     @!outline-path.push: 0 while  @!outline-path < $level;
     my int32 $parent-id = @!outline-path.reverse.first({$_}) || 0;
     my $toc-id = $.surface.add_outline: :$parent-id, :$name, |%link;
-    
     @!outline-path[$level-1] = $toc-id;
 }
 
@@ -238,6 +256,11 @@ Disable index of terms
 
 Add page numbers (bottom right)
 
+=defn --compress
+
+Compress the rendered PDF. The optional [Compress::PDF](https://raku.land/zef:tbrowder/Compress::PDF) module needs to be installed
+to use this option.
+
 =defn --page-style
 
 =begin code :lang<raku>
@@ -341,7 +364,7 @@ my $author = 'David Warring';
 my $description = "sample Pod with replaced content";
 my %replace = :$date, :$title, :$author, :$description;
 my $renderer = pod2pdf($=pod, :%replace, :save-as<replace-example.pdf>);
-$renderer.finish(); 
+$renderer.finish();
 
 =begin pod
 =TITLE R<title>
@@ -363,7 +386,7 @@ Please check these module's installation instructions.
 
 =begin Testing
 
-Note that installation of the L<PDF::Tags::Reader> module enables structural testing. 
+Note that installation of the L<PDF::Tags::Reader> module enables structural testing.
 
 For example, to test this module from source.
 
