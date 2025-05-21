@@ -1,6 +1,7 @@
+unit class Pod::To::PDF:ver<0.1.8>;
+
 use Pod::To::Cairo;
-unit class Pod::To::PDF:ver<0.1.8>
-    is Pod::To::Cairo;
+also is Pod::To::Cairo;
 
 use Cairo;
 use File::Temp;
@@ -31,7 +32,7 @@ sub apply-pdf-compression($pdf-file is rw) {
     }
     require ::('Compress::PDF');
     my $outpdf = $pdf-file.subst(/:i '.pdf'? $/, '-150dpi.pdf');
-    $outpdf = ::('Compress::PDF::EXPORT::DEFAULT::&compress')($pdf-file, :$outpdf, :force);
+    $outpdf = ::('Compress::PDF::EXPORT::DEFAULT::&compress')($pdf-file, :$outpdf, :dpi(150), :force);
     unlink $pdf-file unless $pdf-file eq $outpdf;
     $pdf-file = $outpdf;
 }
