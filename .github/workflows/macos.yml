@@ -29,9 +29,12 @@ jobs:
           brew update
           brew install harfbuzz
           brew install fribidi
+          brew install cairo
           brew reinstall fontconfig
       - name: Install Dependencies
         run: |
+          zef install MacOS::NativeLib
+          ensure-symlink-for harfbuzz fribidi cairo fontconfig
           zef install --/test App::Prove6
           zef --deps-only install .
       - name: Run Tests
