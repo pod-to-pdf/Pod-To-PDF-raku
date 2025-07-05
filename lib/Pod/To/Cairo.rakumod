@@ -53,9 +53,9 @@ has Pod::To::Cairo::Style $.style handles<font font-size leading line-height bol
 has $!tx; # text-flow x
 has $!ty; # text-flow y
 
-method !open-tag($tag) {
+method !open-tag($tag, :%atts) {
     if $!tag {
-        $!ctx.tag_begin($tag);
+        $!ctx.tag_begin($tag, |%atts);
         @!tags.push: $tag;
     }
 }
@@ -67,9 +67,9 @@ method !close-tag {
     }
 }
 
-method !tag(Str:D $tag, &codez) {
+method !tag(Str:D $tag, &codez, :%atts) {
     my $level = @!tags.elems;
-    self!open-tag($tag);
+    self!open-tag($tag, :%atts);
     &codez();
     self!close-tag
         while @!tags.elems > $level;
@@ -148,12 +148,12 @@ method !curr-font {
     }
 }
 
-method !style(&codez, Int :$indent, Str :tag($name), Bool :$block, |c) {
+method !style(&codez, Int :$indent, Str :tag($name), Bool :$block, :%atts, |c) {
     temp $!style .= clone: |c;
     temp $!indent;
     $!indent += $indent if $indent;
     $.pad if $block;
-    my $rv := $name ?? self!tag($name, &codez) !! &codez();
+    my $rv := $name ?? self!tag($name, &codez, :%atts) !! &codez();
     $.pad if $block;
     $rv;
 }
@@ -264,8 +264,10 @@ method !finish-page {
                 my PageFootNote $footnote = @!footnotes.shift;
                 self!style: :tag(Note), {
                     my %link = :page($!page-num), :pos[$!margin-bottom, $footnote.y];
-                    self!style: :tag(Label), :%link, {
-                        $.print($footnote.ind); #[n]
+                    self!artifact: {
+                        self!style: :tag(Label), :%link, {
+                            $.print($footnote.ind); #[n]
+                        }
                     }
                     $!tx += 3;
                     self!tag: Paragraph, {
@@ -549,31 +551,37 @@ method !code(@contents is copy) {
 
     self!ctx;
 
-    self!style: :mono, :indent, :tag(CODE), :lines-before(0), :block, {
-        self!pad-here;
-        my @plain-text;
+    # wrap code in a paragraph to work-around block placement of CODE
+    self!style: :block, :tag(Paragraph), :lines-before(3), {
 
-        for 0 ..^ @contents -> $i {
-            $!code-start-y //= $!ty;
-            given @contents[$i] {
-                when Str {
-                    @plain-text.push: $_;
-                }
-                default  {
-                    # presumably formatted
-                    if @plain-text {
-                        $.print: @plain-text.join;
-                        @plain-text = ();
+        self!style: :mono, :indent, :tag(CODE), #:lines-before(3),
+        ## :atts{:Placement<Block>}, # todo, not working
+        {
+            self!pad-here;
+            my @plain-text;
+
+            for 0 ..^ @contents -> $i {
+                $!code-start-y //= $!ty;
+                given @contents[$i] {
+                    when Str {
+                        @plain-text.push: $_;
                     }
-                    temp $!tag = False;
-                    $.pod2pdf($_);
+                    default  {
+                        # presumably formatted
+                        if @plain-text {
+                            $.print: @plain-text.join;
+                            @plain-text = ();
+                        }
+                        temp $!tag = False;
+                        $.pod2pdf($_);
+                    }
                 }
             }
+            if @plain-text {
+                $.print: @plain-text.join;
+            }
+            self!finish-code;
         }
-        if @plain-text {
-            $.print: @plain-text.join;
-        }
-        self!finish-code;
     }
 }
 
@@ -599,7 +607,7 @@ multi method pod2pdf(Pod::Block::Named $pod) {
             default {
                 my $name = $_;
                 temp $!level += 1;
-               if $name eq $name.uc {
+                if $name eq $name.uc {
                     if $name ~~ 'VERSION'|'NAME'|'AUTHOR' {
                         self.metadata(.lc) ||= $.pod2text-inline($pod.contents);
                     }
@@ -638,9 +646,7 @@ multi method pod2pdf(Pod::Item $pod) {
 }
 
 multi method pod2pdf(Pod::Block::Code $pod) {
-    self!style: :block, :tag(Paragraph), :lines-before(3), {
-        self!code: $pod.contents;
-    }
+    self!code: $pod.contents;
 }
 
 # to reduce the common case <Hn><P>Xxxx<P></Hn> -> <Hn>Xxxx</Hn>
@@ -760,10 +766,12 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             }
             $!gutter-lines += $footnote-lines;
             @!footnotes.push: $footnote;
-            self!tag: Reference, {
-                my @pos = $!margin-left, self!bottom;
-                my %link = :page($!page-num), :@pos;
-                self!style: :tag(Label), :%link, {  $.print($footnote.ind); }
+            self!artifact: {
+                self!tag: Reference, {
+                    my @pos = $!margin-left, self!bottom;
+                    my %link = :page($!page-num), :@pos;
+                    self!style: :tag(Label), :%link, {  $.print($footnote.ind); }
+                }
             }
         }
         when 'U' {
@@ -905,9 +913,7 @@ multi method pod2pdf(Pod::Block::Declarator $pod) {
             }
         }
 
-        self!style: :block, :tag(Paragraph), {
-            self!code: [$decl ~ ' ' ~ $code];
-        }
+        self!code: [$decl ~ ' ' ~ $code];
 
         if $pod.trailing -> $trailing {
             $.pad;

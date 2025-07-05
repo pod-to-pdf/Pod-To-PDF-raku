@@ -37,63 +37,63 @@ sub apply-pdf-compression($pdf-file is rw) {
     $pdf-file = $outpdf;
 }
 
-method render(
-    $class: $pod,
-    Str :$save-as  is copy,
-    Numeric:D :$width  is copy = 612,
-    Numeric:D :$height is copy = 792,
-    Numeric:D :$margin is copy = 20,
-    Numeric   :$margin-left   is copy,
-    Numeric   :$margin-right  is copy,
-    Numeric   :$margin-top    is copy,
-    Numeric   :$margin-bottom is copy,
-    Bool :$index    is copy = True,
-    Bool :$contents is copy = True,
-    Bool :$page-numbers is copy,
-    Bool :$verbose is copy,
-    Bool :$compress is copy,
+sub get-opts(%opts) {
+    my Bool $show-usage;
+    for @*ARGS {
+        when /^'--'('/')?(page\-numbers|index|verbose|compress)$/         { %opts{$1} = ! $0.so }
+        when /^'--'('/')?[toc|['table-of-']?contents]$/  { %opts<contents>  = ! $0.so }
+        when /^'--'(page\-style|save\-as)'='(.+)$/       { %opts{$0} = $1.Str }
+        when /^'--'(width|height|margin[\-[top|bottom|left|right]]?)'='(\d+)$/
+                                                         { %opts{$0}  = $1.Int }
+        default {  $show-usage = True; note "ignoring $_ argument" }
+    }
+    note '(valid options are: --save-as= --page-numbers --index --toc --verbose --compress --width= --height= --margin[-left|-right|-top|-bottom]?= --page-style --async=)'
+        if $show-usage;
+    %opts;
+}
+
+sub pod-render(
+    $pod,
+    :$class!,
+    Str:D :$save-as!,
+    Numeric:D :$width  = 612,
+    Numeric:D :$height = 792,
+    Numeric:D :$margin = 20,
+    Numeric   :$margin-left   = $margin,
+    Numeric   :$margin-top    = $margin,
+    Numeric   :$margin-right  = $margin-left,
+    Numeric   :$margin-bottom = $margin-top,
+    Bool :$index    = True,
+    Bool :$contents = True,
+    Bool :$page-numbers,
+    Bool :$verbose,
+    Bool :$compress,
+    Str  :$page-style,
     |c,
 ) {
-    state %cache{Any};
-    %cache{$pod} //= do {
-        my Bool $show-usage;
-        for @*ARGS {
-            when /^'--page-numbers'$/  { $page-numbers = True }
-            when /^'--/index'$/        { $index    = False }
-            when /^'--verbose'$/       { $verbose  = True }
-            when /^'--compress'$/      { $compress = True }
-            when /^'--/'[toc|['table-of-']?contents]$/ { $contents  = False }
-            when /^'--width='(\d+)$/   { $width  = $0.Int }
-            when /^'--height='(\d+)$/  { $height = $0.Int }
-            when /^'--margin='(\d+)$/  { $margin = $0.Int }
-            when /^'--margin-top='(\d+)$/     { $margin-top = $0.Int }
-            when /^'--margin-bottom='(\d+)$/  { $margin-bottom = $0.Int }
-            when /^'--margin-left='(\d+)$/    { $margin-left = $0.Int }
-            when /^'--margin-right='(\d+)$/   { $margin-right = $0.Int }
-            when /^'--page-style='(.+)$/    {
-                apply-page-styling(
-                    $0.Str,
-                    :$width, :$height,
-                    :$margin-top, :$margin-bottom, :$margin-left, :$margin-right,
-                           )
-            }
-            when /^'--save-as='(.+)$/  { $save-as = $0.Str }
-            default {  $show-usage = True; note "ignoring $_ argument" }
-        }
-        note '(valid options are: --save-as= --page-numbers --width= --height= --margin[-left|-right|-top|-bottom]= --page-style= --/index --/contents --compress)'
-            if $show-usage;
-        $save-as //= tempfile("POD6-****.pdf", :!unlink)[0];
-        my Cairo::Surface::PDF $surface .= create($save-as, $width, $height);
-        my $obj = $class.new: :$pod, :$surface, :$margin, :$margin-left, :$margin-right, :$margin-top, :$margin-bottom, :$contents, :$page-numbers, :$verbose, |c;
-        $obj!build-index
-            if $index && $obj.index;
-        $surface.finish;
+    apply-page-styling(
+        $_,
+        :$width, :$height,
+        :$margin-top, :$margin-bottom, :$margin-left, :$margin-right,
+    ) with $page-style;
 
-        apply-pdf-compression($save-as)
-            if $compress;
+    my Cairo::Surface::PDF $surface .= create($save-as, $width, $height);
+    my $obj = $class.new: :$pod, :$surface, :$margin, :$margin-left, :$margin-right, :$margin-top, :$margin-bottom, :$contents, :$page-numbers, :$verbose, |c;
+    $obj!build-index
+        if $index && $obj.index;
+    $surface.finish;
 
-        $save-as;
-    }
+    apply-pdf-compression($save-as)
+        if $compress;
+
+    $save-as;
+}
+
+method render(::?CLASS $class: $pod, Str :$save-as, |c) {
+    my %opts .= &get-opts;
+    %opts<save-as> = $_ with $save-as;
+    %opts<save-as> //= tempfile("POD6-****.pdf", :!unlink)[0];
+    state $rendered //= pod-render($pod, :$class, |%opts, |c);
 }
 
 our sub pod2pdf(
