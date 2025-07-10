@@ -39,6 +39,7 @@ has Str @!tags;
 has $.linker = Pod::To::Cairo::Linker;
 has %.replace;
 has %.index;
+has @!refs;
 has $.tag = True;
 has Numeric $!code-start-y;
 has Bool $!float;
@@ -519,7 +520,9 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
 }
 
 # artifacts started working between v1.16.0 < cairo <= v1.17.0
-my $have-artifact = Cairo::version() >= v1.17.0;
+#my $have-artifact = Cairo::version() >= v1.17.0;
+#various issues with v1.18.5 - to be raised
+my constant $have-artifact = False;
 method !artifact(&code) {
     $have-artifact ?? self!tag(Artifact, &code) !! &code();
 }

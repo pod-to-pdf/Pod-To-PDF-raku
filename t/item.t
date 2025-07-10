@@ -4,12 +4,13 @@ use Test;
 use Pod::To::PDF;
 use Cairo;
 
-plan 2;
+plan 3;
 
 mkdir "tmp";
 my $save-as = "tmp/item.pdf";
 my Cairo::Surface $pdf = pod2pdf($=pod, :$save-as);
 lives-ok {$pdf.finish}
+cmp-ok $pdf.status, '==', CAIRO_STATUS_SUCCESS, 'status ok';
 
 my $xml = q{<Document>
   <P>

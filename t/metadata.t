@@ -4,7 +4,7 @@ use Test;
 use Pod::To::PDF;
 use Cairo;
 
-plan 7;
+plan 8;
 
 mkdir "tmp";
 my $save-as = "tmp/metadata.pdf";
@@ -48,6 +48,7 @@ is $pod.metadata('version'), '1.2.3';
 is $pod.metadata('author'), 'David Warring';
 
 lives-ok {$surface.finish}
+cmp-ok $surface.status, '==', CAIRO_STATUS_SUCCESS, 'status ok';
 
 if (try require PDF::Tags::Reader) === Nil {
     skip-rest "PDF::Tags::Reader is required to perform structural PDF testing";

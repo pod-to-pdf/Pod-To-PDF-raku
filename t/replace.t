@@ -1,6 +1,8 @@
 use Test;
-plan 3;
 use Pod::To::PDF;
+use Cairo;
+
+plan 4;
 
 mkdir "tmp";
 my $save-as = "tmp/replace.pdf";
@@ -10,10 +12,11 @@ my $date = '2022-03-17';
 my $author = 'David Warring';
 my $description = "sample Pod with replaced content";
 my %replace = :$date, :$title, :$author, :$description;
+my Cairo::Surface $pdf = pod2pdf($=pod, :%replace, :$save-as);
 lives-ok {
-    .finish()
-        given pod2pdf($=pod, :%replace, :$save-as);
+    $pdf.finish()
 }
+cmp-ok $pdf.status, '==', CAIRO_STATUS_SUCCESS, 'status ok';
 
 %replace<description> = $=pod;
 dies-ok {
