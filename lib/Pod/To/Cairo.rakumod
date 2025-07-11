@@ -25,10 +25,20 @@ has HarfBuzz::Font::Cairo %!fonts;
 has HarfBuzz::Font::Cairo $!cur-font;
 has Str $!cur-font-patt = '';
 my class PageFootNote {
-    has @.contents is required;
-    has Int:D $.num is rw is required;
+    has @.contents    is required;
+    has Int:D $.num   is rw is required;
+    has Str:D() $.id    is required;
     has Numeric:D $.y is required;
     method ind { '[' ~ $!num ~ ']' }
+    method make-reference-tag(:%atts --> List) {
+        %atts<ref> = $!id;
+        'cairo.content_ref', %atts;
+    }
+    method make-target-tag(Str:D $tag, :%atts --> List) {
+        %atts<tag_name> = $tag;
+        %atts<id> = $!id;
+        'cairo.content', %atts;
+    }
 }
 has PageFootNote @!footnotes;
 has Bool $.contents = True;
@@ -39,7 +49,7 @@ has Str @!tags;
 has $.linker = Pod::To::Cairo::Linker;
 has %.replace;
 has %.index;
-has @!refs;
+has $!id-counter = 0;
 has $.tag = True;
 has Numeric $!code-start-y;
 has Bool $!float;
@@ -263,17 +273,17 @@ method !finish-page {
             while @!footnotes {
                 $!padding = FooterStyle.line-height;
                 my PageFootNote $footnote = @!footnotes.shift;
-                self!style: :tag(Note), {
-                    my %link = :page($!page-num), :pos[$!margin-bottom, $footnote.y];
-                    self!artifact: {
-                        self!style: :tag(Label), :%link, {
-                            $.print($footnote.ind); #[n]
-                        }
+                my %link = :page($!page-num), :pos[$!margin-bottom, $footnote.y];
+                self!artifact: {
+                    self!style: :tag(Label), :%link, {
+                        $.print($footnote.ind); #[n]
                     }
-                    $!tx += 3;
-                    self!tag: Paragraph, {
-                        $.pod2pdf($footnote.contents);
-                    }
+                }
+                $!tx += 3;
+                my :($tag, %atts) := $footnote.make-target-tag: Note;
+                self!style: :$tag, :%atts, {
+                    temp $!tag = False; # Cairo restriction on target tags
+                    $.pod2pdf($footnote.contents);
                 }
             }
         }
@@ -519,12 +529,17 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
     }
 }
 
-# artifacts started working between v1.16.0 < cairo <= v1.17.0
 #my $have-artifact = Cairo::version() >= v1.17.0;
 #various issues with v1.18.5 - to be raised
 my constant $have-artifact = False;
 method !artifact(&code) {
-    $have-artifact ?? self!tag(Artifact, &code) !! &code();
+    if $have-artifact {
+        self!tag(Artifact, &code);
+    }
+    else {
+        temp $!tag = False; # work-around
+        &code();
+    }
 }
 
 method !finish-code {
@@ -745,10 +760,12 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
         }
         when 'N' {
             # rough positioning to footnote area
+            my $id = ++$!id-counter;
             my PageFootNote:D $footnote .= new(
                 :contents($pod.contents),
                 :num(@!footnotes+1),
                 :y($!ty - $.line-height),
+                :$id,
             );
              my UInt:D $footnote-lines = do {
                 # pre-compute footnote size
@@ -768,7 +785,6 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                 $footnote.num = 1; # first footnote on the new page
             }
             $!gutter-lines += $footnote-lines;
-            @!footnotes.push: $footnote;
             self!artifact: {
                 self!tag: Reference, {
                     my @pos = $!margin-left, self!bottom;
@@ -776,6 +792,11 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                     self!style: :tag(Label), :%link, {  $.print($footnote.ind); }
                 }
             }
+            my :($tag, %atts) := $footnote.make-reference-tag;
+            self!style: :$tag, :%atts, -> {
+                # footnote content is added at the end of the page
+            }
+            @!footnotes.push: $footnote;
         }
         when 'U' {
             self!style: :underline, {
