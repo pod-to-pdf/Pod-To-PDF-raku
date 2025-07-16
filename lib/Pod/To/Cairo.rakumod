@@ -34,7 +34,7 @@ my class PageFootNote {
         %atts<ref> = $!id;
         'cairo.content_ref', %atts;
     }
-    method make-target-tag(Str:D $tag, :%atts --> List) {
+    method resolve-reference-tag(Str:D $tag, :%atts --> List) {
         %atts<tag_name> = $tag;
         %atts<id> = $!id;
         'cairo.content', %atts;
@@ -273,22 +273,20 @@ method !finish-page {
         temp $!gutter-lines = 0;
         my $start-page = $!page-num;
 
-        self!tag: Paragraph, {
-            while @!footnotes {
-                $!padding = FooterStyle.line-height;
-                my PageFootNote $footnote = @!footnotes.shift;
-                my %link = :page($!page-num), :pos[$!margin-bottom, $footnote.y];
-                self!artifact: {
-                    self!style: :tag(Label), :%link, {
-                        $.print($footnote.ind); #[n]
-                    }
+        while @!footnotes {
+            $!padding = FooterStyle.line-height;
+            my PageFootNote $footnote = @!footnotes.shift;
+            my %link = :page($!page-num), :pos[$!margin-bottom, $footnote.y];
+            self!artifact: {
+                self!style: :tag(Label), :%link, {
+                    $.print($footnote.ind); #[n]
                 }
-                $!tx += 3;
-                my :($tag, %atts) := $footnote.make-target-tag: Note;
-                self!style: :$tag, :%atts, {
-                    temp $!tag = False; # Cairo restriction on target tags
-                    $.pod2pdf($footnote.contents);
-                }
+            }
+            $!tx += 3;
+            my :($tag, %atts) := $footnote.resolve-reference-tag: Note;
+            self!style: :$tag, :%atts, {
+                temp $!tag = False; # Cairo restriction on target tags
+                $.pod2pdf($footnote.contents);
             }
         }
         unless $!page-num == $start-page {
@@ -543,7 +541,6 @@ method !artifact(&code) {
         self!tag(Artifact, &code);
     }
     else {
-        temp $!tag = False; # work-around
         &code();
     }
 }
@@ -796,9 +793,11 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                     self!style: :tag(Label), :%link, {  $.print($footnote.ind); }
                 }
             }
-            my :($tag, %atts) := $footnote.make-reference-tag;
-            self!style: :$tag, :%atts, -> {
-                # footnote content is added at the end of the page
+            self!style: :tag(Note), {
+                my :($tag, %atts) := $footnote.make-reference-tag;
+                self!style: :$tag, :%atts, -> {
+                    # footnote content is added at the end of the page
+                }
             }
             @!footnotes.push: $footnote;
         }

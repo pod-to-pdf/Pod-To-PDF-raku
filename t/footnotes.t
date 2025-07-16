@@ -18,19 +18,11 @@ my $xml = q{<Document>
       <Lbl>
         <Link>[1]</Link>
       </Lbl>
-    </Reference> footnotes.
+    </Reference><Note>if you click, here, you should got back to the paragraph</Note> footnotes.
   </P>
-  <!-- this is how Pod::To::PDF::API6 structures footnotes
-    -- see also PDF Association - Tagged PDF Best Practice Guide: Syntax
-    -- Difficult to do via current tag support in Cairo's API.
-    -->
-  <P>
-    Paragraph with formatting, <Code>code</Code> and <Reference><Link href="#blah">links</Link></Reference><Note>
-      <Lbl>
-        <Link>[1]</Link>
-      </Lbl>
-      if you click, here, you should got back to the paragraph</Note>.
-  </P>
+  <Lbl>
+    <Link>[1]</Link>
+  </Lbl>
 </Document>
 };
 
@@ -44,7 +36,6 @@ if (try require PDF::Tags::Reader) === Nil {
     exit 0;
 }
 
-todo "best practice footnotes";
 subtest 'footnote structure', {
     plan 1;
     # PDF::Class is an indirect dependency of PDF::Tags::Reader
