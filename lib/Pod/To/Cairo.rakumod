@@ -55,7 +55,7 @@ has Numeric $!code-start-y;
 has Bool $!float;
 
 method tags-support {
-    Cairo::version() >= v1.18.0
+    Cairo::version() >= v1.18.2
 }
 
 enum Tags ( :Artifact<Artifact>, :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :LIST<L>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Quote<Quote>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
