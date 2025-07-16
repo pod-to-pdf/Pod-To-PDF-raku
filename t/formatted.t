@@ -39,11 +39,16 @@ my $xml = q{<Document>
   </P>
   <P>
     A tap on an <Code>on demand</Code> supply will initiate the production of values, and tapping the supply again may result in a
-new set of values. For example, <Code>Supply.interval</Code> produces a fresh timer with the appropriate interval each time
-it is tapped. If the tap is closed, the timer simply stops emitting values to that tap.
+    new set of values. For example, <Code>Supply.interval</Code> produces a fresh timer with the appropriate interval each time
+    it is tapped. If the tap is closed, the timer simply stops emitting values to that tap.
   </P>
 </Document>
 };
+
+unless Pod::To::PDF.tags-support {
+    skip-rest "Tags are not supported for Cairo version " ~ Cairo::version;
+    exit 0;
+}
 
 if (try require PDF::Tags::Reader) === Nil {
     skip-rest "PDF::Tags::Reader is required to perform structural PDF testing";

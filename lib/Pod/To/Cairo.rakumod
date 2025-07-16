@@ -50,9 +50,13 @@ has $.linker = Pod::To::Cairo::Linker;
 has %.replace;
 has %.index;
 has $!id-counter = 0;
-has $.tag = True;
+has Bool $.tag = self.tags-support();
 has Numeric $!code-start-y;
 has Bool $!float;
+
+method tags-support {
+    Cairo::version() >= v1.18.0
+}
 
 enum Tags ( :Artifact<Artifact>, :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :LIST<L>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Quote<Quote>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
 
@@ -529,8 +533,10 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
     }
 }
 
-#my $have-artifact = Cairo::version() >= v1.17.0;
-#various issues with v1.18.5 - to be raised
+# my $have-artifact = Cairo::version() >= v1.17.0;
+# Cairo v1.18.4 Artifact tags cannot contain nested content.
+# Have raised https://gitlab.freedesktop.org/cairo/cairo/-/issues/906
+# hoping for a PDF 2.0 interpetation.
 my constant $have-artifact = False;
 method !artifact(&code) {
     if $have-artifact {
@@ -968,9 +974,7 @@ sub param2text($p) {
 }
 
 multi method pod2pdf(Str $pod) {
-    self!style: :tag(Span), {
-        $.print($pod);
-    }
+    $.print($pod);
 }
 
 method !nest-list(@lists, $level) {
