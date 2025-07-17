@@ -214,8 +214,6 @@ Testing
 
 Note that installation of the [PDF::Tags::Reader](PDF::Tags::Reader) module enables structural testing.
 
-Cairo v1.18.0 is the lowest supported version.
-
 For example, to test this module from source.
 
     $ git clone https://github.com/pod-to-pdf/Pod-To-PDF-raku

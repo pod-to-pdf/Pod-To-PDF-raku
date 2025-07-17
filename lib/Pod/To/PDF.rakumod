@@ -1,4 +1,4 @@
-unit class Pod::To::PDF:ver<0.1.9>;
+unit class Pod::To::PDF:ver<0.1.10>;
 
 use Pod::To::Cairo;
 also is Pod::To::Cairo;
@@ -47,7 +47,7 @@ sub get-opts(%opts) {
                                                          { %opts{$0}  = $1.Int }
         default {  $show-usage = True; note "ignoring $_ argument" }
     }
-    note '(valid options are: --save-as= --page-numbers --index --toc --verbose --compress --width= --height= --margin[-left|-right|-top|-bottom]?= --page-style --async=)'
+    note '(valid options are: --save-as= --page-numbers --index --toc --verbose --compress --width= --height= --margin[-left|-right|-top|-bottom]?= --page-style=)'
         if $show-usage;
     %opts;
 }

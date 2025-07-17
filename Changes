@@ -1,12 +1,16 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+
+0.1.10  2025-07-18T09:03:32+12:00
     - Make use of Cairo v1.18.0 tagged PDF forward references
+    - Drop support for Cairo < v1.18.0. I.e. Remove some work-
+      arounds for poor tagging earlier versions. Note that
+      v1.18.2+ is preferred.
     - Avoid Artifact tags, for now.
-    - Checks for unresolved internal references, E.g. L<#Contents>
-      where there's no such section. This can cause be fatal in some
+    - Check for unresolved internal references, E.g. L<#Contents>
+      where there's no such section. This can be fatal in some
       versions of Cairo.
-    - Disable tagging for Cairo < v0.18.0
 
 0.1.9  2025-05-22T08:14:13+12:00
     - Create internal PageFootNote class
