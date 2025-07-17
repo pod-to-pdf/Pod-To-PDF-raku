@@ -74,10 +74,8 @@ unless Pod::To::PDF.tags-support {
     exit 0;
 }
 
-if (try require PDF::Tags::Reader) === Nil {
-    skip-rest "PDF::Tags::Reader is required to perform structural PDF testing";
-    exit 0;
-}
+todo "Tags are not supported for Cairo version " ~ Cairo::version
+    unless Pod::To::PDF.tags-support;
 
 subtest 'document structure', {
     plan 1;

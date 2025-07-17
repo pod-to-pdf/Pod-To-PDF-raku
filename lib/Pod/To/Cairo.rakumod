@@ -50,11 +50,12 @@ has $.linker = Pod::To::Cairo::Linker;
 has %.replace;
 has %.index;
 has $!id-counter = 0;
-has Bool $.tag = self.tags-support();
+has Bool $.tag = True;
 has Numeric $!code-start-y;
 has Bool $!float;
 has %!dest;
 
+# Lowest tested andf supported version of tagged PDF
 method tags-support {
     Cairo::version() >= v1.18.0
 }
@@ -289,7 +290,9 @@ method !finish-page {
                 }
             }
             $!tx += 3;
-            my :($tag, %atts) := $footnote.resolve-reference-tag: Note;
+            my :($tag, %atts) := Cairo::version() >= v1.18.0
+                ?? $footnote.resolve-reference-tag: Note
+                !! (Note, %());
             self!style: :$tag, :%atts, {
                 temp $!tag = False; # Cairo restriction on target tags
                 $.pod2pdf($footnote.contents);
@@ -800,10 +803,12 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                     self!style: :tag(Label), :%link, {  $.print($footnote.ind); }
                 }
             }
-            self!style: :tag(Note), {
-                my :($tag, %atts) := $footnote.make-reference-tag;
-                self!style: :$tag, :%atts, -> {
-                    # footnote content is added at the end of the page
+            if Cairo::version() >= v1.18.0 {
+                self!style: :tag(Note), {
+                    my :($tag, %atts) := $footnote.make-reference-tag;
+                    self!style: :$tag, :%atts, -> {
+                        # footnote content is added at the end of the page
+                    }
                 }
             }
             @!footnotes.push: $footnote;
