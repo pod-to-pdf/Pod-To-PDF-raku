@@ -66,7 +66,7 @@ subtest 'document structure', {
     require PDF::Class;
     my $pdf  = PDF::Class.open: "tmp/paragraph.pdf";
     my $tags = PDF::Tags::Reader.read: :$pdf;
-    my $actual-xml = $tags[0].Str(:omit<Span>);
+    my $actual-xml = $tags[0].Str;
     todo 'losing intra-formatting space'
         if $actual-xml ~~ s/withformatting/with formatting/;
     is $actual-xml, $xml, 'PDF Structure is correct';

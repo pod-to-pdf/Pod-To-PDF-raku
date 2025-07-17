@@ -69,8 +69,8 @@ code</Code>
 </Document>
 };
 
-unless Pod::To::PDF.tags-support {
-    skip-rest "Tags are not supported for Cairo version " ~ Cairo::version;
+if (try require PDF::Tags::Reader) === Nil {
+    skip-rest "PDF::Tags::Reader is required to perform structural PDF testing";
     exit 0;
 }
 
@@ -84,7 +84,7 @@ subtest 'document structure', {
     require PDF::Class;
     my $pdf  = PDF::Class.open: "tmp/code.pdf";
     my $tags = PDF::Tags::Reader.read: :$pdf;
-    is $tags[0].Str(:omit<Span>), $xml, 'PDF Structure is correct';
+    is $tags[0].Str, $xml, 'PDF Structure is correct';
 }
 
 =begin pod

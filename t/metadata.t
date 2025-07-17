@@ -73,7 +73,7 @@ subtest 'document structure', {
     require PDF::Class;
     my $pdf  = PDF::Class.open: "tmp/metadata.pdf";
     my $tags = PDF::Tags::Reader.read: :$pdf;
-    my $actual-xml = $tags[0].Str(:omit<Span>);
+    my $actual-xml = $tags[0].Str;
     is $actual-xml, $xml, 'PDF Structure is correct';
 }
 

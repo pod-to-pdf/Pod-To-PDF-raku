@@ -40,7 +40,7 @@ subtest 'footnote structure', {
     require PDF::Class;
     my $pdf  = PDF::Class.open: "tmp/footnotes.pdf";
     my $tags = PDF::Tags::Reader.read: :$pdf;
-    is $tags[0].Str(:omit<Span>), $xml, 'footnote structure as expected';
+    is $tags[0].Str, $xml, 'footnote structure as expected';
 }
 
 =begin pod

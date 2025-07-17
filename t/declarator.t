@@ -55,7 +55,7 @@ subtest 'document structure', {
     require PDF::Class;
     my $pdf  = PDF::Class.open: "tmp/declarator.pdf";
     my $tags = PDF::Tags::Reader.read: :$pdf;
-    is $tags[0].Str(:omit<Span>), $xml, 'PDF Structure is correct';
+    is $tags[0].Str, $xml, 'PDF Structure is correct';
 }
 
 =comment Example taken from docs.raku.org/language/pod#Declarator_blocks
