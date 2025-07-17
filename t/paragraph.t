@@ -38,8 +38,11 @@ my $xml = q{<Document>
     spaces and tabs are ignored
   </P>
   <P>
-    Paragraph with formatting, <Code>code</Code> and <Reference><Link href="#blah">links</Link></Reference>.
+    Paragraph with formatting, <Code>code</Code> and <Reference><Link href="#Blah">links</Link></Reference>.
   </P>
+  <H2>
+    Blah
+  </H2>
   <P>
     Paragraph with (see: <Link href="file:included.pod">ﬁle:included.pod</Link>) placement
   </P>
@@ -96,7 +99,9 @@ paragraph
 
 =para spaces  and	tabs are ignored
 
-=para Paragraph U<with> B<formatting>, C<code> and L<links|#blah>.
+=para Paragraph U<with> B<formatting>, C<code> and L<links|#Blah>.
+
+=head2 Blah
 
 =para Paragraph with P<file:included.pod> placement
 

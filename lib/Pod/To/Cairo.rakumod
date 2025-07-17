@@ -53,9 +53,10 @@ has $!id-counter = 0;
 has Bool $.tag = self.tags-support();
 has Numeric $!code-start-y;
 has Bool $!float;
+has %!dest;
 
 method tags-support {
-    Cairo::version() >= v1.18.2
+    Cairo::version() >= v1.18.0
 }
 
 enum Tags ( :Artifact<Artifact>, :Caption<Caption>, :CODE<Code>, :Document<Document>, :Header<H>, :Label<Lbl>, :LIST<L>, :ListBody<LBody>, :ListItem<LI>, :Note<Note>, :Reference<Reference>, :Paragraph<P>, :Quote<Quote>, :Span<Span>, :Section<Sect>, :Table<Table>, :TableBody<TBody>, :TableHead<THead>, :TableHeader<TH>, :TableData<TD>, :TableRow<TR> );
@@ -90,11 +91,15 @@ method !tag(Str:D $tag, &codez, :%atts) {
         while @!tags.elems > $level;
 }
 
-method read($pod) {
+method read($pod) is hidden-from-backtrace {
     self!tag: Document, {
         self.pod2pdf($pod);
         self!finish-page;
     }
+    # Dangling internal references can cause issues in some Cairo versions
+    my @dangling = %!dest.grep(*.value > 0).sort.map: *.key;
+    warn "Unresolved internal links in document: " ~ @dangling.join: ', '
+        if @dangling;
 }
 
 method !preload-fonts(@fonts) {
@@ -131,7 +136,8 @@ submethod TWEAK(:$pod, :@fonts, :%metadata, Numeric:D :$margin = 20) {
 # Backend specific methods
 method render(|) {...}
 method metadata($?) is rw { $ }
-method add-toc-entry(Str:D $Title, Str :$dest!, Level :$level! ) { }
+method add-toc-entry(Str:D $Title, Str :$dest!, Level :$level! ) {
+}
 
 multi method block(&codez) { $.pad; &codez(); $.pad}
 multi method pad($!padding = 2*$.line-height) {}
@@ -487,10 +493,9 @@ multi method pod2pdf(Pod::Block::Table $pod) {
     }
 }
 
-has UInt %!dest-used;
 method !gen-dest-name($title, $seq = '') {
     my $name = dest-name($title ~ $seq);
-    if %!dest-used{$name}++ {
+    if %!dest{$name} && %!dest{$name} < 0 {
         self!gen-dest-name($title, ($seq||0) + 1);
     }
     else {
@@ -521,11 +526,11 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
 
         my Str $Title = $.pod2text-inline($pod);
         my Str:D $name = self!gen-dest-name($Title);
+        %!dest{$name} = -Inf;
         self!pad-here; # ensure destination is correctly positioned
         self!ctx.destination: :$name, {
             $.pod2pdf($pod);
         }
-
         self.add-toc-entry: $Title, :dest($name), :$level
             if $toc && $!contents;
     }
@@ -702,7 +707,9 @@ method !resolve-link(Str $url) {
     my %style;
     with $url {
         if .starts-with('#') {
-            %style<link><dest> = dest-name .substr(1);
+            my $name = .substr(1).&dest-name();
+            %!dest{$name}++;
+            %style<link><dest> = $name;
             %style<tag> = Reference;
         }
         else {
