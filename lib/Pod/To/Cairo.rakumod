@@ -294,7 +294,6 @@ method !finish-page {
                 ?? $footnote.resolve-reference-tag: Note
                 !! (Note, %());
             self!style: :$tag, :%atts, {
-                temp $!tag = False; # Cairo restriction on target tags
                 $.pod2pdf($footnote.contents);
             }
         }
