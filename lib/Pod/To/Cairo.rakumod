@@ -46,6 +46,7 @@ has Bool $.verbose;
 has Bool $!blank-page = True;
 has UInt:D $!level = 1;
 has Str @!tags;
+has UInt:D @!numbering = 0;
 has $.linker = Pod::To::Cairo::Linker;
 has %.replace;
 has %.index;
@@ -72,6 +73,7 @@ has $!ty; # text-flow y
 
 method !open-tag($tag, :%atts) {
     if $!tag {
+        @!numbering.push(0);
         $!ctx.tag_begin($tag, |%atts);
         @!tags.push: $tag;
     }
@@ -79,12 +81,13 @@ method !open-tag($tag, :%atts) {
 
 method !close-tag {
     if $!tag {
+        @!numbering.pop;
         my Str:D $tag = @!tags.pop;
         $!ctx.tag_end($tag);
     }
 }
 
-method !tag(Str:D $tag, &codez, :%atts) {
+method !tag(Str:D $tag, &codez, :role($), :%atts) {
     my $level = @!tags.elems;
     self!open-tag($tag, :%atts);
     &codez();
@@ -170,7 +173,7 @@ method !curr-font {
     }
 }
 
-method !style(&codez, Int :$indent, Str :tag($name), Bool :$block, :%atts, |c) {
+method !style(&codez, Int :$indent, Str :tag($name), Bool :$block, :role($), :%atts, |c) {
     temp $!style .= clone: |c;
     temp $!indent;
     $!indent += $indent if $indent;
@@ -650,17 +653,19 @@ multi method pod2pdf(Pod::Block::Named $pod) {
     }
 }
 
+sub bullet-point(Level $level) {
+    my constant BulletPoints = ("\c[BULLET]",
+                                "\c[WHITE BULLET]",
+                                '-');
+    BulletPoints[$level - 1];
+}
+
 multi method pod2pdf(Pod::Item $pod) {
     my Level $list-level = min($pod.level // 1, 3);
+    my $label = @!numbering.tail ?? @!numbering.tail.Str !! $list-level.&bullet-point;
     self!style: :tag(ListItem), :block, :indent($list-level), {
-        {
-            my constant BulletPoints = ("\c[BULLET]",
-                                        "\c[WHITE BULLET]",
-                                        '-');
-            my Str $bp = BulletPoints[$list-level - 1];
-            self!style: :tag(Label), {
-                $.print: $bp;
-            }
+        self!style: :tag(Label), {
+            $.print: $label;
         }
 
         # omit any leading vertical padding in the list-body
@@ -882,12 +887,14 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
 }
 
 multi method pod2pdf(Pod::Defn $pod) {
-    self!tag: Paragraph, {
-        self!style: :bold, :tag(Quote), {
+    self!tag: ListItem, :role<DL-DIV>, {
+        self!style: :bold, :tag(ListItem), :role<DL-DIV>, {
             $.pod2pdf($pod.term);
         }
     }
-    $.pod2pdf: $pod.contents;
+    self!tag: ListBody, :role<DD>, {
+        $.pod2pdf: $pod.contents;
+    }
 }
 
 multi method pod2pdf(Pod::Block::Declarator $pod) {
@@ -987,24 +994,37 @@ multi method pod2pdf(Str $pod) {
     $.print($pod);
 }
 
-method !nest-list(@lists, $level) {
-    while @lists && @lists.tail > $level {
+method !nest-list(@levels, $level, :defn($)) {
+    while @levels && @levels.tail > $level {
         self!close-tag;
-        @lists.pop;
+        @levels.pop;
     }
-    if $level && (!@lists || @lists.tail < $level) {
+    if $level && (!@levels || @levels.tail < $level) {
         self!open-tag(LIST);
-        @lists.push: $level;
+        @levels.push: $level;
     }
 }
 
 multi method pod2pdf(List:D $pod) {
-    my @lists;
+    my @levels;
     for $pod.list {
-        self!nest-list(@lists, .isa(Pod::Item) ?? .level !! 0);
+        my Bool $defn;
+        my $level = do {
+            when Pod::Item { .level }
+            when Pod::Defn { $defn = True; 1 }
+            default { 0 }
+        }
+        self!nest-list(@levels, $level, :$defn);
+        if .isa(Pod::Block) && .config<numbered> {
+            @!numbering.tail++;
+        }
+        else {
+            @!numbering.tail = 0;
+        }
+
         $.pod2pdf($_);
     }
-    self!nest-list(@lists, 0);
+    self!nest-list(@levels, 0);
 }
 
 multi method pod2pdf($pod) {

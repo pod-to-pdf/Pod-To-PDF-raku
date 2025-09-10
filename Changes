@@ -1,12 +1,13 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+    - Implement numbered lists
 
 0.1.10  2025-07-18T09:03:32+12:00
-    - Make use of Cairo v1.18.0 tagged PDF forward references
-    - Drop support for Cairo < v1.18.0. I.e. Remove some work-
-      arounds for poor tagging earlier versions. Note that
-      v1.18.2+ is preferred.
+    - Make use of Cairo v1.18.0+ tagged PDF forward references
+    - Drop support for Cairo < v1.18.0. Remove some workarounds
+      for poor tagging in earlier versions. Note that v1.18.2+
+      is preferred.
     - Avoid Artifact tags, for now.
     - Check for unresolved internal references, E.g. L<#Contents>
       where there's no such section. This can be fatal in some

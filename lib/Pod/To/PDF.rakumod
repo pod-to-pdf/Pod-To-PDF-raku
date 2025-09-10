@@ -90,10 +90,12 @@ sub pod-render(
 }
 
 method render(::?CLASS $class: $pod, Str :$save-as, |c) {
-    my %opts .= &get-opts;
-    %opts<save-as> = $_ with $save-as;
-    %opts<save-as> //= tempfile("POD6-****.pdf", :!unlink)[0];
-    state $rendered //= pod-render($pod, :$class, |%opts, |c);
+    state $rendered //= do {
+        my %opts .= &get-opts;
+        %opts<save-as> = $_ with $save-as;
+        %opts<save-as> //= tempfile("POD6-****.pdf", :!unlink)[0];
+        pod-render($pod, :$class, |%opts, |c);
+    }
 }
 
 our sub pod2pdf(

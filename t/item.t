@@ -159,8 +159,9 @@ asdf
 
 =begin item1
 Top Item
-=item2     First sub-item
-=item2     Second sub-item
+=item2 #  First numbered sub-item
+=item2 #  Second numbered sub-item
+=item2    Un-numbered sub-item
 =end item1
 
 =for item
