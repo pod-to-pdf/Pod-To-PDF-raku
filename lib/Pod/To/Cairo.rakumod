@@ -27,7 +27,7 @@ has Str $!cur-font-patt = '';
 my class PageFootNote {
     has @.contents    is required;
     has Int:D $.num   is rw is required;
-    has Str:D() $.id    is required;
+    has Str:D() $.id  is required;
     has Numeric:D $.y is required;
     method ind { '[' ~ $!num ~ ']' }
     method make-reference-tag(:%atts --> List) {
@@ -888,7 +888,7 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
 
 multi method pod2pdf(Pod::Defn $pod) {
     self!tag: ListItem, :role<DL-DIV>, {
-        self!style: :bold, :tag(ListItem), :role<DL-DIV>, {
+        self!style: :bold, :tag(Label), :role<DT>, {
             $.pod2pdf($pod.term);
         }
     }

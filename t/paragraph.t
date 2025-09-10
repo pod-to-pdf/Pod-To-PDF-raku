@@ -38,7 +38,7 @@ my $xml = q{<Document>
     spaces and tabs are ignored
   </P>
   <P>
-    Paragraph with formatting, <Code>code</Code> and <Reference><Link href="#Blah">links</Link></Reference>.
+    Paragraph <Span>with</Span> formatting, <Code>code</Code> and <Reference><Link href="#Blah">links</Link></Reference>.
   </P>
   <H2>
     Blah

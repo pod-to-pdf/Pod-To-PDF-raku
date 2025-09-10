@@ -16,18 +16,28 @@ my $xml = q{<Document>
   <H2>
     pod2pdf() Options
   </H2>
-  <P>
-    <Quote>Str() :$save-as</Quote>
-  </P>
-  <P>
-    A ﬁlename for the output PDF ﬁle.
-  </P>
-  <P>
-    <Quote>Cairo::Surface::PDF :$surface</Quote>
-  </P>
-  <P>
-    A surface to render to
-  </P>
+  <L>
+    <LI>
+      <Lbl>
+        Str() :$save-as
+      </Lbl>
+    </LI>
+    <LBody>
+      <P>
+        A ﬁlename for the output PDF ﬁle.
+      </P>
+    </LBody>
+    <LI>
+      <Lbl>
+        Cairo::Surface::PDF :$surface
+      </Lbl>
+    </LI>
+    <LBody>
+      <P>
+        A surface to render to
+      </P>
+    </LBody>
+  </L>
 </Document>
 };
 

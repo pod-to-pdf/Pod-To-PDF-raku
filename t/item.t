@@ -49,10 +49,18 @@ my $xml = q{<Document>
         <L>
           <LI>
             <Lbl>
-              ◦
+              1
             </Lbl>
             <LBody>
-              First sub-item
+              First numbered sub-item
+            </LBody>
+          </LI>
+          <LI>
+            <Lbl>
+              2
+            </Lbl>
+            <LBody>
+              Second numbered sub-item
             </LBody>
           </LI>
           <LI>
@@ -60,7 +68,7 @@ my $xml = q{<Document>
               ◦
             </Lbl>
             <LBody>
-              Second sub-item
+              Un-numbered sub-item
             </LBody>
           </LI>
         </L>
