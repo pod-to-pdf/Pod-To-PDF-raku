@@ -30,11 +30,15 @@ my class PageFootNote {
     has Str:D() $.id  is required;
     has Numeric:D $.y is required;
     method ind { '[' ~ $!num ~ ']' }
-    method make-reference-tag(:%atts --> List) {
+    method ok {
+        # whether we need to apply work-arounds
+        Cairo::version() >= v1.18.0 && @!contents.are ~~ Str;
+    }
+    method tag-content-ref(:%atts --> List) {
         %atts<ref> = $!id;
         'cairo.content_ref', %atts;
     }
-    method resolve-reference-tag(Str:D $tag, :%atts --> List) {
+    method tag-content(Str:D $tag, :%atts --> List) {
         %atts<tag_name> = $tag;
         %atts<id> = $!id;
         'cairo.content', %atts;
@@ -293,8 +297,8 @@ method !finish-page {
                 }
             }
             $!tx += 3;
-            my :($tag, %atts) := Cairo::version() >= v1.18.0
-                ?? $footnote.resolve-reference-tag: Note
+            my :($tag, %atts) := $footnote.ok
+                ?? $footnote.tag-content(Note)
                 !! (Note, %());
             self!style: :$tag, :%atts, {
                 $.pod2pdf($footnote.contents);
@@ -310,7 +314,6 @@ method !finish-page {
     }
     self!number-page()
         if !$!blank-page && $!page-numbers;
-
 }
 
 has $!last-page-num = 0;
@@ -807,10 +810,10 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                     self!style: :tag(Label), :%link, {  $.print($footnote.ind); }
                 }
             }
-            if Cairo::version() >= v1.18.0 {
+            if $footnote.ok {
                 self!style: :tag(Note), {
-                    my :($tag, %atts) := $footnote.make-reference-tag;
-                    self!style: :$tag, :%atts, -> {
+                    my :($tag, %atts) := $footnote.tag-content-ref;
+                    self!tag: $tag, :%atts, -> {
                         # footnote content is added at the end of the page
                     }
                 }

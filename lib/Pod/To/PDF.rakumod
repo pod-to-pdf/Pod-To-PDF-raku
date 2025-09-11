@@ -70,7 +70,7 @@ sub pod-render(
     Bool :$compress,
     Str  :$page-style,
     |c,
-) {
+) is hidden-from-backtrace {
     apply-page-styling(
         $_,
         :$width, :$height,
@@ -82,6 +82,8 @@ sub pod-render(
     $obj!build-index
         if $index && $obj.index;
     $surface.finish;
+    die $surface.status_string
+        if $surface.status;
 
     apply-pdf-compression($save-as)
         if $compress;

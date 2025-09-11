@@ -18,11 +18,19 @@ my $xml = q{<Document>
       <Lbl>
         <Link>[1]</Link>
       </Lbl>
-    </Reference><Note>if you click, here, you should got back to the paragraph</Note> footnotes.
+    </Reference><Note>if you click, here, you should got back to the paragraph</Note> footnotes. <Reference>
+      <Lbl>
+        <Link>[2]</Link>
+      </Lbl>
+    </Reference>
   </P>
   <Lbl>
     <Link>[1]</Link>
   </Lbl>
+  <Lbl>
+    <Link>[2]</Link>
+  </Lbl>
+  <Note>a footnote with a <Link href="link">link</Link></Note>
 </Document>
 };
 
@@ -45,6 +53,6 @@ subtest 'footnote structure', {
 
 =begin pod
 
-=para sanity test of N<if you click, here, you should got back to the paragraph> footnotes.
+=para sanity test of N<if you click, here, you should got back to the paragraph> footnotes. N<a footnote with a L<link>>
 
 =end pod
