@@ -1,6 +1,10 @@
 Revision history for Pod-To-PDF
 
 {{$NEXT}}
+
+0.1.11  2025-09-12T08:29:20+12:00
+    - Work around issues in handling complex content (links) in footnotes
+      under Cairo v1.18.0+.
     - Implement numbered lists
 
 0.1.10  2025-07-18T09:03:32+12:00

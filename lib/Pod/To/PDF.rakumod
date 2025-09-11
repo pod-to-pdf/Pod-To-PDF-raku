@@ -1,4 +1,4 @@
-unit class Pod::To::PDF:ver<0.1.10>;
+unit class Pod::To::PDF:ver<0.1.11>;
 
 use Pod::To::Cairo;
 also is Pod::To::Cairo;
