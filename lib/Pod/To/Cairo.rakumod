@@ -30,6 +30,7 @@ my class PageFootNote {
     has Str:D() $.id  is required;
     has Numeric:D $.y is required;
     method ind { '[' ~ $!num ~ ']' }
+    method pad { 3 }
     method ok {
         # whether we need to apply work-arounds
         Cairo::version() >= v1.18.0 && @!contents.are ~~ Str;
@@ -203,10 +204,12 @@ method !text-chunk(
     Numeric :$width = $!width - self!indent - $!margin-right,
     Numeric :$height = self!height-remaining,
     Complex :$flow = ($!tx - self!indent) + 0i;
+    :$x = self!indent,
+    :$y = $!ty,
     |c,
 ) {
     my $font := self!curr-font();
-    Pod::To::Cairo::TextChunk.new: :$text, :$flow, :$font, :$!style :$width, :$height, |c;
+    Pod::To::Cairo::TextChunk.new: :$text, :$flow, :$font, :$!style :$width, :$height, :$x, :$y, |c;
 }
 
 multi method say {
@@ -280,6 +283,7 @@ method !finish-page {
         temp $!style = FooterStyle;
         temp $!indent = 0;
         temp $!code-start-y = Nil;
+        temp $!padding = 0;
         $!tx = $!margin-left;
         $!ty = self!bottom;
 
@@ -288,18 +292,18 @@ method !finish-page {
         my $start-page = $!page-num;
 
         while @!footnotes {
-            $!padding = FooterStyle.line-height;
             my PageFootNote $footnote = @!footnotes.shift;
-            my %link = :page($!page-num), :pos[$!margin-bottom, $footnote.y];
             self!artifact: {
+                $.say;
+                my %link = :page($!page-num), :pos[$!margin-bottom, $footnote.y];
                 self!style: :tag(Label), :%link, {
                     $.print($footnote.ind); #[n]
                 }
             }
-            $!tx += 3;
             my :($tag, %atts) := $footnote.ok
                 ?? $footnote.tag-content(Note)
                 !! (Note, %());
+            $!tx += $footnote.pad;
             self!style: :$tag, :%atts, {
                 $.pod2pdf($footnote.contents);
             }
@@ -785,15 +789,17 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                 :y($!ty - $.line-height),
                 :$id,
             );
-             my UInt:D $footnote-lines = do {
+            my UInt:D $footnote-lines = do {
                 # pre-compute footnote size
                 temp $!style = FooterStyle;
                 temp $!tx = $!margin-left;
                 temp $!ty = $!margin-top;
                 temp $!indent = 0;
                 given $footnote {
-                    my $draft-text = .ind ~ $.pod2text-inline(.contents);
-                    +self!text-chunk($draft-text).lines;
+                    temp $!width *= .9 unless .contents.are ~~ Str;
+                    my $draft-text = .ind  ~ $.pod2text-inline(.contents);
+                    my $flow = .pad + 0i;
+                    +self!text-chunk($draft-text, :$flow).lines;
                 }
             }
             unless self!height-remaining > ($footnote-lines+1) * FooterStyle.line-height {
