@@ -792,14 +792,13 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
             my UInt:D $footnote-lines = do {
                 # pre-compute footnote size
                 temp $!style = FooterStyle;
-                temp $!tx = $!margin-left;
+                temp $!tx = $!margin-left + $footnote.pad;
                 temp $!ty = $!margin-top;
                 temp $!indent = 0;
                 given $footnote {
                     temp $!width *= .9 unless .contents.are ~~ Str;
                     my $draft-text = .ind  ~ $.pod2text-inline(.contents);
-                    my $flow = .pad + 0i;
-                    +self!text-chunk($draft-text, :$flow).lines;
+                    +self!text-chunk($draft-text).lines;
                 }
             }
             unless self!height-remaining > ($footnote-lines+1) * FooterStyle.line-height {
