@@ -51,7 +51,6 @@ has Bool $.verbose;
 has Bool $!blank-page = True;
 has UInt:D $!level = 1;
 has Str @!tags;
-has UInt:D @!numbering = 0;
 has $.linker = Pod::To::Cairo::Linker;
 has %.replace;
 has %.index;
@@ -78,7 +77,6 @@ has $!ty; # text-flow y
 
 method !open-tag($tag, :%atts) {
     if $!tag {
-        @!numbering.push(0);
         $!ctx.tag_begin($tag, |%atts);
         @!tags.push: $tag;
     }
@@ -86,7 +84,6 @@ method !open-tag($tag, :%atts) {
 
 method !close-tag {
     if $!tag {
-        @!numbering.pop;
         my Str:D $tag = @!tags.pop;
         $!ctx.tag_end($tag);
     }
@@ -476,30 +473,28 @@ method !build-table($pod, @table) {
 multi method pod2pdf(Pod::Block::Table $pod) {
     my @widths = self!build-table: $pod, my @table;
 
-    self!style: :lines-before(3), :block, {
-        self!tag: Table, {
-            if $pod.caption -> $caption {
-                self!style: :tag(Caption), :italic, {
-                    $.say: $caption;
-                }
+    self!tag: Table, {
+        if $pod.caption -> $caption {
+            self!style: :tag(Caption), :italic, {
+                $.say: $caption;
             }
-            self!pad-here;
-            my @headers = @table.shift.List;
-            if @headers {
-                self!tag: TableHead, {
-                    self!table-row: @headers, @widths, :header;
-                }
+        }
+        self!pad-here;
+        my @headers = @table.shift.List;
+        if @headers {
+            self!tag: TableHead, {
+                self!table-row: @headers, @widths, :header;
             }
+        }
 
-            if @table {
-                 self!tag: TableBody, {
-                     for @table {
-                         my @row = .List;
-                         if @row {
-                             self!table-row: @row, @widths;
-                         }
+        if @table {
+             self!tag: TableBody, {
+                 for @table {
+                     my @row = .List;
+                     if @row {
+                         self!table-row: @row, @widths;
                      }
-                }
+                 }
             }
         }
     }
@@ -624,52 +619,52 @@ method !code(@contents is copy) {
 }
 
 multi method pod2pdf(Pod::Block::Named $pod) {
-    $.block: {
-        given $pod.name {
-            when 'pod'  { $.pod2pdf($pod.contents)     }
-            when 'para' {
+    given $pod.name {
+        when 'pod'  { $.pod2pdf($pod.contents)     }
+        when 'para' {
+            $.pod2pdf: $pod.contents;
+        }
+        when 'config' { }
+        when 'nested' {
+            self!style: :indent, {
                 $.pod2pdf: $pod.contents;
             }
-            when 'config' { }
-            when 'nested' {
-                self!style: :indent, {
-                    $.pod2pdf: $pod.contents;
+        }
+        when 'TITLE'|'SUBTITLE' {
+            my $toc = $_ eq 'TITLE';
+            $!level = $toc ?? 0 !! 2;
+            self.metadata(.lc) ||= $.pod2text-inline($pod.contents);
+            self!heading($pod.contents, :$toc, :pad(1));
+        }
+        default {
+            my $name = $_;
+            temp $!level += 1;
+            if $name eq $name.uc {
+                if $name ~~ 'VERSION'|'NAME'|'AUTHOR' {
+                    self.metadata(.lc) ||= $.pod2text-inline($pod.contents);
                 }
+                $!level = 2;
+                $name = .tclc;
             }
-            when 'TITLE'|'SUBTITLE' {
-                my $toc = $_ eq 'TITLE';
-                $!level = $toc ?? 0 !! 2;
-                self.metadata(.lc) ||= $.pod2text-inline($pod.contents);
-                self!heading($pod.contents, :$toc, :pad(1));
-            }
-            default {
-                my $name = $_;
-                temp $!level += 1;
-                if $name eq $name.uc {
-                    if $name ~~ 'VERSION'|'NAME'|'AUTHOR' {
-                        self.metadata(.lc) ||= $.pod2text-inline($pod.contents);
-                    }
-                    $!level = 2;
-                    $name = .tclc;
-                }
 
-                self!heading($name);
-                $.pod2pdf($pod.contents);
-            }
+            self!heading($name);
+            $.pod2pdf($pod.contents);
         }
     }
 }
 
 sub bullet-point(Level $level) {
     my constant BulletPoints = ("\c[BULLET]",
-                                "\c[WHITE BULLET]",
+                                "\c[MIDDLE DOT]",
                                 '-');
     BulletPoints[$level - 1];
 }
 
-multi method pod2pdf(Pod::Item $pod) {
+multi method pod2pdf(Pod::Item $pod, :$num) {
     my Level $list-level = min($pod.level // 1, 3);
-    my $label = @!numbering.tail ?? @!numbering.tail.Str !! $list-level.&bullet-point;
+    my $label = $num
+          ?? $num.Str
+          !! $list-level.&bullet-point;
     self!style: :tag(ListItem), :block, :indent($list-level), {
         self!style: :tag(Label), {
             $.print: $label;
@@ -699,17 +694,13 @@ multi sub strip-para(Pod::Block::Para $_) {
 multi sub strip-para($_) { $_ }
 
 multi method pod2pdf(Pod::Heading $pod) {
-    $.block: {
-        $!level = min($pod.level, 6);
-        self!heading: $pod.contents;
-    }
+    $!level = min($pod.level, 6);
+    self!heading: $pod.contents;
 }
 
 multi method pod2pdf(Pod::Block::Para $pod) {
-    $.block: {
-        self!style: :tag(Paragraph), {
-            $.pod2pdf($pod.contents);
-        }
+    self!style: :tag(Paragraph), {
+        $.pod2pdf($pod.contents);
     }
 }
 
@@ -957,22 +948,20 @@ multi method pod2pdf(Pod::Block::Declarator $pod) {
     my $decl = %spec<decl>  // $type;
     my $code = %spec<code>  // $w.raku;
 
-    self!style: :lines-before(3), :block, {
-        self!heading($type.tclc ~ ' ' ~ $name, :$level);
+    self!heading($type.tclc ~ ' ' ~ $name, :$level);
 
-        if $pod.leading -> $leading {
-            self!style: :block, :tag(Paragraph), {
-                $.pod2pdf($leading);
-            }
+    if $pod.leading -> $leading {
+        self!style: :block, :tag(Paragraph), {
+            $.pod2pdf($leading);
         }
+    }
 
-        self!code: [$decl ~ ' ' ~ $code];
+    self!code: [$decl ~ ' ' ~ $code];
 
-        if $pod.trailing -> $trailing {
-            $.pad;
-            self!style: :block, :tag(Paragraph), {
-                $.pod2pdf($trailing);
-            }
+    if $pod.trailing -> $trailing {
+        $.pad;
+        self!style: :block, :tag(Paragraph), {
+            $.pod2pdf($trailing);
         }
     }
 }
@@ -1013,26 +1002,36 @@ method !nest-list(@levels, $level, :defn($)) {
     }
 }
 
+method !pod2pdf-block($pod, :@levels!, :@seq!) {
+    given $pod {
+        when Pod::Item { self!nest-list: @levels, .level }
+        when Pod::Defn { self!nest-list: @levels, 1 }
+    }
+
+    my $num := @seq.tail;
+    if $pod.config<numbered> {
+        $num++;
+    }
+    else {
+        $num = 0;
+    }
+
+    self!style: :lines-before(3), :block, {
+        $.pod2pdf($pod, :$num);
+    }
+}
+
 multi method pod2pdf(List:D $pod) {
     my @levels;
+    my @seq = 0;
     for $pod.list {
-        my Bool $defn;
-        my $level = do {
-            when Pod::Item { .level }
-            when Pod::Defn { $defn = True; 1 }
-            default { 0 }
-        }
-        self!nest-list(@levels, $level, :$defn);
-        if .isa(Pod::Block) && .config<numbered> {
-            @!numbering.tail++;
+        if .isa(Pod::Block) && !.isa(Pod::FormattingCode) {
+            self!pod2pdf-block($_, :@levels, :@seq);
         }
         else {
-            @!numbering.tail = 0;
+            $.pod2pdf($_);
         }
-
-        $.pod2pdf($_);
     }
-    self!nest-list(@levels, 0);
 }
 
 multi method pod2pdf($pod) {
