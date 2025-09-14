@@ -516,6 +516,7 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
     my Bool $bold = $level <= 4;
     my Bool $italic;
     my $lines-before = $.lines-before;
+    my $tag = 'H' ~ ($level||1);
 
     given $level {
         when 0|1 { self!new-page; }
@@ -526,9 +527,6 @@ method !heading($pod is copy, Level:D :$level = $!level, :$underline = $level <=
 
     $pod .= &strip-para;
 
-    my $tag = $level
-               ?? 'H' ~ $level
-               !! 'H1';
     self!style: :$tag, :$font-size, :$bold, :$italic, :$underline, :$lines-before, {
 
         my Str $Title = $.pod2text-inline($pod);
@@ -991,7 +989,7 @@ multi method pod2pdf(Str $pod) {
     $.print($pod);
 }
 
-method !nest-list(@levels, $level, :defn($)) {
+method !nest-list(@levels, $level) {
     while @levels && @levels.tail > $level {
         self!close-tag;
         @levels.pop;
@@ -1003,10 +1001,13 @@ method !nest-list(@levels, $level, :defn($)) {
 }
 
 method !pod2pdf-block($pod, :@levels!, :@seq!) {
-    given $pod {
-        when Pod::Item { self!nest-list: @levels, .level }
-        when Pod::Defn { self!nest-list: @levels, 1 }
+    my $list-level = do given $pod {
+        when Pod::Item { .level }
+        when Pod::Defn { 1 }
+        default { 0 }
     }
+    self!nest-list: @levels, $list-level;
+
 
     my $num := @seq.tail;
     if $pod.config<numbered> {
@@ -1032,6 +1033,7 @@ multi method pod2pdf(List:D $pod) {
             $.pod2pdf($_);
         }
     }
+    self!nest-list: @levels, 0;
 }
 
 multi method pod2pdf($pod) {
