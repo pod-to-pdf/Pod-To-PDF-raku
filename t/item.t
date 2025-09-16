@@ -65,7 +65,7 @@ my $xml = q{<Document>
           </LI>
           <LI>
             <Lbl>
-              ◦
+              ·
             </Lbl>
             <LBody>
               Un-numbered sub-item
