@@ -59,6 +59,7 @@ has Bool $.tag = True;
 has Numeric $!code-start-y;
 has Bool $!float;
 has %!dest;
+has @!item-nums;
 
 # Lowest tested andf supported version of tagged PDF
 method tags-support {
@@ -658,10 +659,10 @@ sub bullet-point(Level $level) {
     BulletPoints[$level - 1];
 }
 
-multi method pod2pdf(Pod::Item $pod, :$num) {
+multi method pod2pdf(Pod::Item $pod) {
     my Level $list-level = min($pod.level // 1, 3);
-    my $label = $num
-          ?? $num.Str
+    my $label = @!item-nums.tail
+          ?? @!item-nums.grep({$_}).join('.')
           !! $list-level.&bullet-point;
     self!style: :tag(ListItem), :block, :indent($list-level), {
         self!style: :tag(Label), {
@@ -990,17 +991,28 @@ multi method pod2pdf(Str $pod) {
 }
 
 method !nest-list(@levels, $level) {
+    my constant Marker = '*auto*';
     while @levels && @levels.tail > $level {
         self!close-tag;
+        if @!tags.tail ~~ Marker {
+           @!tags.pop;
+           self!close-tag;
+        }
         @levels.pop;
+        @!item-nums.pop;
     }
     if $level && (!@levels || @levels.tail < $level) {
+        if @!tags.tail ~~ LIST {
+            self!open-tag(ListItem);
+            @!tags.push: Marker;
+        }
         self!open-tag(LIST);
         @levels.push: $level;
+        @!item-nums.push: 0;
     }
 }
 
-method !pod2pdf-block($pod, :@levels!, :@seq!) {
+method !pod2pdf-block($pod, :@levels!) {
     my $list-level = do given $pod {
         when Pod::Item { .level }
         when Pod::Defn { 1 }
@@ -1009,25 +1021,24 @@ method !pod2pdf-block($pod, :@levels!, :@seq!) {
     self!nest-list: @levels, $list-level;
 
 
-    my $num := @seq.tail;
-    if $pod.config<numbered> {
-        $num++;
+    with @!item-nums.tail -> $num is rw {
+        if $pod.config<numbered> {
+            $num++;
+        }
+        else {
+            $num = 0;
+        }
     }
-    else {
-        $num = 0;
-    }
-
     self!style: :lines-before(3), :block, {
-        $.pod2pdf($pod, :$num);
+        $.pod2pdf($pod);
     }
 }
 
 multi method pod2pdf(List:D $pod) {
     my @levels;
-    my @seq = 0;
     for $pod.list {
         if .isa(Pod::Block) && !.isa(Pod::FormattingCode) {
-            self!pod2pdf-block($_, :@levels, :@seq);
+            self!pod2pdf-block($_, :@levels);
         }
         else {
             $.pod2pdf($_);

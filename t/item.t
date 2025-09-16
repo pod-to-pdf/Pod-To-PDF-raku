@@ -64,12 +64,36 @@ my $xml = q{<Document>
             </LBody>
           </LI>
           <LI>
+            <L>
+              <LI>
+                <Lbl>
+                  2.1
+                </Lbl>
+                <LBody>
+                  Numbered item with numbered sub-item
+                </LBody>
+              </LI>
+            </L>
+          </LI>
+          <LI>
             <Lbl>
               ·
             </Lbl>
             <LBody>
               Un-numbered sub-item
             </LBody>
+          </LI>
+          <LI>
+            <L>
+              <LI>
+                <Lbl>
+                  1
+                </Lbl>
+                <LBody>
+                  Un-numbered item with numbered sub-item
+                </LBody>
+              </LI>
+            </L>
           </LI>
         </L>
       </LBody>
@@ -169,7 +193,9 @@ asdf
 Top Item
 =item2 #  First numbered sub-item
 =item2 #  Second numbered sub-item
+=item3 #  Numbered item with numbered sub-item
 =item2    Un-numbered sub-item
+=item3 #  Un-numbered item with numbered sub-item
 =end item1
 
 =for item
