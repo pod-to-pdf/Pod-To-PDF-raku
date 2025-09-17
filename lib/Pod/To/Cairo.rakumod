@@ -141,7 +141,9 @@ submethod TWEAK(:$pod, :@fonts, :%metadata, Numeric:D :$margin = 20) {
 }
 
 # Backend specific methods
-method render(|) {...}
+method render(|) is hidden-from-backtrace {
+   die "Pod::To::Cairo is nyi"
+}
 method metadata($?) is rw { $ }
 method add-toc-entry(Str:D $Title, Str :$dest!, Level :$level! ) {
 }
@@ -991,21 +993,12 @@ multi method pod2pdf(Str $pod) {
 }
 
 method !nest-list(@levels, $level) {
-    my constant Marker = '*auto*';
-    while @levels && @levels.tail > $level {
+     while @levels && @levels.tail > $level {
         self!close-tag;
-        if @!tags.tail ~~ Marker {
-           @!tags.pop;
-           self!close-tag;
-        }
         @levels.pop;
         @!item-nums.pop;
     }
     if $level && (!@levels || @levels.tail < $level) {
-        if @!tags.tail ~~ LIST {
-            self!open-tag(ListItem);
-            @!tags.push: Marker;
-        }
         self!open-tag(LIST);
         @levels.push: $level;
         @!item-nums.push: 0;
@@ -1020,15 +1013,17 @@ method !pod2pdf-block($pod, :@levels!) {
     }
     self!nest-list: @levels, $list-level;
 
-
-    with @!item-nums.tail -> $num is rw {
-        if $pod.config<numbered> {
-            $num++;
-        }
-        else {
-            $num = 0;
+    if $list-level {
+        with @!item-nums.tail -> $num is rw {
+            if $pod.config<numbered> {
+                $num++;
+            }
+            else {
+                $num = 0;
+            }
         }
     }
+
     self!style: :lines-before(3), :block, {
         $.pod2pdf($pod);
     }

@@ -83,18 +83,16 @@ my $xml = q{<Document>
               Un-numbered sub-item
             </LBody>
           </LI>
-          <LI>
-            <L>
-              <LI>
-                <Lbl>
-                  1
-                </Lbl>
-                <LBody>
-                  Un-numbered item with numbered sub-item
-                </LBody>
-              </LI>
-            </L>
-          </LI>
+          <L>
+            <LI>
+              <Lbl>
+                1
+              </Lbl>
+              <LBody>
+                Un-numbered item with numbered sub-item
+              </LBody>
+            </LI>
+          </L>
         </L>
       </LBody>
     </LI>
