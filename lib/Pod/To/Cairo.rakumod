@@ -31,8 +31,8 @@ my class PageFootNote {
     has Numeric:D $.y is required;
     method ind { '[' ~ $!num ~ ']' }
     method pad { 3 }
-    method ok {
-        # whether we need to apply work-arounds
+    method can-tag {
+        # whether we can properly tag this footnote
         Cairo::version() >= v1.18.0 && @!contents.are ~~ Str;
     }
     method tag-content-ref(:%atts --> List) {
@@ -300,7 +300,7 @@ method !finish-page {
                     $.print($footnote.ind); #[n]
                 }
             }
-            my :($tag, %atts) := $footnote.ok
+            my :($tag, %atts) := $footnote.can-tag
                 ?? $footnote.tag-content(Note)
                 !! (Note, %());
             $!tx += $footnote.pad;
@@ -361,7 +361,7 @@ method !ctx {
 }
 
 # a simple algorithm for sizing table column widths
-sub fit-widths($width is copy, @widths) {
+sub fit-width(@widths, $width is copy) {
     my $cell-width = $width / +@widths;
     my @idx;
 
@@ -380,7 +380,7 @@ sub fit-widths($width is copy, @widths) {
             my $i = 0;
             @over[$_] := @widths[ @idx[$_] ]
                 for  ^+@idx;
-            fit-widths($width, @over);
+            @over.&fit-width($width);
         }
         else {
             $_ = $cell-width
@@ -452,10 +452,10 @@ method !table-cell($pod) {
     self!text-chunk: $text, :width(Inf), :height(Inf), :flow(0 + 0i);
 }
 
-method !build-table($pod, @table) {
+method !build-table($pod) {
     my $x0 = self!indent;
     my \total-width = $!width - $x0 - $!margin-right;
-    @table = ();
+    my @table = ();
 
     self!style: :bold, :lines-before(3), {
         my @row = $pod.headers.map: { self!table-cell($_) }
@@ -469,12 +469,12 @@ method !build-table($pod, @table) {
 
     my $cols = @table.max: *.Int;
     my @widths = (^$cols).map: -> $col { @table.map({.[$col].?content-width // 0}).max };
-   fit-widths(total-width - hpad * (@widths-1), @widths);
-   @widths;
+   @widths.&fit-width(total-width - hpad * (@widths-1));
+   @table, @widths;
 }
 
 multi method pod2pdf(Pod::Block::Table $pod) {
-    my @widths = self!build-table: $pod, my @table;
+    my :(@table, @widths) := self!build-table: $pod;
 
     self!tag: Table, {
         if $pod.caption -> $caption {
@@ -664,7 +664,7 @@ sub bullet-point(Level $level) {
 multi method pod2pdf(Pod::Item $pod) {
     my Level $list-level = min($pod.level // 1, 3);
     my $label = @!item-nums.tail
-          ?? @!item-nums.grep({$_}).join('.')
+          ?? @!item-nums.grep({$_}).join('.') ~ '.'
           !! $list-level.&bullet-point;
     self!style: :tag(ListItem), :block, :indent($list-level), {
         self!style: :tag(Label), {
@@ -807,7 +807,7 @@ multi method pod2pdf(Pod::FormattingCode $pod) {
                     self!style: :tag(Label), :%link, {  $.print($footnote.ind); }
                 }
             }
-            if $footnote.ok {
+            if $footnote.can-tag {
                 self!style: :tag(Note), {
                     my :($tag, %atts) := $footnote.tag-content-ref;
                     self!tag: $tag, :%atts, -> {
