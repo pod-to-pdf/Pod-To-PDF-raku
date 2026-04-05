@@ -412,7 +412,7 @@ method !table-row(@row, @widths, Bool :$header) {
 
             for ^cols {
                 my $width = @widths[$_];
-                if @row[$_] -> $tb is rw {
+                if @row[$_] -> $tb is copy {
                     if $tb.content-width > $width || $tb.content-height > $height {
                         $tb .= clone: :$width, :$height;
                     }
@@ -469,8 +469,8 @@ method !build-table($pod) {
 
     my $cols = @table.max: *.Int;
     my @widths = (^$cols).map: -> $col { @table.map({.[$col].?content-width // 0}).max };
-   @widths.&fit-width(total-width - hpad * (@widths-1));
-   @table, @widths;
+    @widths.&fit-width(total-width - hpad * (@widths-1));
+    @table, @widths;
 }
 
 multi method pod2pdf(Pod::Block::Table $pod) {
@@ -663,19 +663,21 @@ sub bullet-point(Level $level) {
 
 multi method pod2pdf(Pod::Item $pod) {
     my Level $list-level = min($pod.level // 1, 3);
+    my $label-end;
     my $label = @!item-nums.tail
           ?? @!item-nums.grep({$_}).join('.') ~ '.'
           !! $list-level.&bullet-point;
     self!style: :tag(ListItem), :block, :indent($list-level), {
         self!style: :tag(Label), {
             $.print: $label;
+            $label-end = $!tx + $.font-size/2;
         }
 
         # omit any leading vertical padding in the list-body
         $!float = True;
 
         self!style: :tag(ListBody), :indent, :!block, {
-            $!tx = self!indent;
+            $!tx = max self!indent, $label-end;
             $.pod2pdf($pod.contents.&strip-para);
         }
     }
