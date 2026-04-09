@@ -49,7 +49,7 @@ my $xml = q{<Document>
         <L>
           <LI>
             <Lbl>
-              1
+              1.
             </Lbl>
             <LBody>
               First numbered sub-item
@@ -57,7 +57,7 @@ my $xml = q{<Document>
           </LI>
           <LI>
             <Lbl>
-              2
+              2.
             </Lbl>
             <LBody>
               Second numbered sub-item
@@ -66,7 +66,7 @@ my $xml = q{<Document>
           <L>
             <LI>
               <Lbl>
-                2.1
+                2.1.
               </Lbl>
               <LBody>
                 Numbered item with numbered sub-item
@@ -84,7 +84,7 @@ my $xml = q{<Document>
           <L>
             <LI>
               <Lbl>
-                1
+                1.
               </Lbl>
               <LBody>
                 Un-numbered item with numbered sub-item
