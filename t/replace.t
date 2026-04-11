@@ -24,30 +24,14 @@ dies-ok {
 }, 'recursive replacement detected';
 
 my $xml = q{<Document>
-  <H1>
-    Sample Title
-  </H1>
-  <H2>
-    Replacement Test
-  </H2>
-  <H2>
-    Author
-  </H2>
-  <P>
-    David Warring
-  </P>
-  <H2>
-    Date
-  </H2>
-  <P>
-    2022-03-17
-  </P>
-  <H2>
-    Description
-  </H2>
-  <P>
-    sample Pod with replaced content;
-  </P>
+  <H1>Sample Title</H1>
+  <H2>Replacement Test</H2>
+  <H2>Author</H2>
+  <P>David Warring</P>
+  <H2>Date</H2>
+  <P>2022-03-17</P>
+  <H2>Description</H2>
+  <P>sample Pod with replaced content;</P>
 </Document>
 };
 

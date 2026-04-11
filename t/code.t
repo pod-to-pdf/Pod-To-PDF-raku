@@ -13,59 +13,31 @@ lives-ok {$pdf.finish}
 cmp-ok $pdf.status, '==', CAIRO_STATUS_SUCCESS, 'status ok';
 
 my $xml = q{<Document>
-  <P>
-    asdf
-  </P>
-  <P>
-    <Code>indented</Code>
-  </P>
-  <P>
-    asdf
-  </P>
-  <P>
-    <Code>indented
+  <P>asdf</P>
+  <P><Code>indented</Code></P>
+  <P>asdf</P>
+  <P><Code>indented
 multi
-line</Code>
-  </P>
-  <P>
-    asdf
-  </P>
-  <P>
-    <Code>indented
+line</Code></P>
+  <P>asdf</P>
+  <P><Code>indented
 multi
 line
     nested
 and
 broken
-up</Code>
-  </P>
-  <P>
-    asdf
-  </P>
-  <P>
-    <Code>Abbreviated</Code>
-  </P>
-  <P>
-    asdf
-  </P>
-  <P>
-    <Code>Paragraph
-code</Code>
-  </P>
-  <P>
-    asdf
-  </P>
-  <P>
-    <Code>Delimited
-code</Code>
-  </P>
-  <P>
-    asdf
-  </P>
-  <P>
-    <Code>Formatted
-code</Code>
-  </P>
+up</Code></P>
+  <P>asdf</P>
+  <P><Code>Abbreviated</Code></P>
+  <P>asdf</P>
+  <P><Code>Paragraph
+code</Code></P>
+  <P>asdf</P>
+  <P><Code>Delimited
+code</Code></P>
+  <P>asdf</P>
+  <P><Code>Formatted
+code</Code></P>
 </Document>
 };
 

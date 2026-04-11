@@ -13,62 +13,26 @@ lives-ok {$pdf.finish}
 cmp-ok $pdf.status, '==', CAIRO_STATUS_SUCCESS, 'status ok';
 
 my $xml = q{<Document>
+  <H1>Heading tests</H1>
+  <H2>for <Link href="pod::To::PDF">Pod::To::PDF</Link></H2>
+  <H1>Abbreviated heading1</H1>
+  <P>asdf</P>
+  <H1>Paragraph heading1</H1>
+  <P>asdf</P>
+  <H2>Subheading2</H2>
   <H1>
-    Heading tests
+    <P>Structured</P>
+    <P>heading1</P>
   </H1>
-  <H2>
-    for <Link href="pod::To::PDF">Pod::To::PDF</Link>
-  </H2>
-  <H1>
-    Abbreviated heading1
-  </H1>
-  <P>
-    asdf
-  </P>
-  <H1>
-    Paragraph heading1
-  </H1>
-  <P>
-    asdf
-  </P>
-  <H2>
-    Subheading2
-  </H2>
-  <H1>
-    <P>
-      Structured
-    </P>
-    <P>
-      heading1
-    </P>
-  </H1>
-  <H3>
-    Heading3
-  </H3>
-  <P>
-    asdf
-  </P>
-  <H2>
-    Head2
-  </H2>
-  <P>
-    asdf
-  </P>
-  <H3>
-    Head3
-  </H3>
-  <P>
-    asdf
-  </P>
-  <H4>
-    Head4
-  </H4>
-  <P>
-    asdf
-  </P>
-  <H2>
-    Private methods
-  </H2>
+  <H3>Heading3</H3>
+  <P>asdf</P>
+  <H2>Head2</H2>
+  <P>asdf</P>
+  <H3>Head3</H3>
+  <P>asdf</P>
+  <H4>Head4</H4>
+  <P>asdf</P>
+  <H2>Private methods</H2>
 </Document>
 };
 

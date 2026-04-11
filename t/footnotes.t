@@ -13,25 +13,12 @@ lives-ok { $pdf.finish; }
 cmp-ok $pdf.status, '==', CAIRO_STATUS_SUCCESS, 'status ok';
 
 my $xml = q{<Document>
-  <P>
-    sanity test of <Reference>
-      <Lbl>
-        <Link>[1]</Link>
-      </Lbl>
-    </Reference> footnotes. <Reference>
-      <Lbl>
-        <Link>[2]</Link>
-      </Lbl>
-    </Reference>
+  <P>sanity test of <Reference>
+    <Lbl><Link>[1]</Link></Lbl></Reference> footnotes. <Reference>
+    <Lbl><Link>[2]</Link></Lbl></Reference>
   </P>
-  <Lbl>
-    <Link>[1]</Link>
-  </Lbl>
-  <Note>if you click, here, you should got back to the paragraph</Note>
-  <Lbl>
-    <Link>[2]</Link>
-  </Lbl>
-  <Note>a footnote with a <Link href="link">link</Link></Note>
+  <Lbl><Link>[1]</Link></Lbl><Note>if you click, here, you should got back to the paragraph</Note>
+  <Lbl><Link>[2]</Link></Lbl><Note>a footnote with a <Link href="link">link</Link></Note>
 </Document>
 };
 

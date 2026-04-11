@@ -13,30 +13,16 @@ lives-ok {$pdf.finish}
 cmp-ok $pdf.status, '==', CAIRO_STATUS_SUCCESS, 'status ok';
 
 my $xml = q{<Document>
-  <H2>
-    Class Magician
-  </H2>
-  <P>
-    Base class for magicians
-  </P>
-  <P>
-    <Code>class Magician</Code>
-  </P>
-  <H3>
-    Sub duel
-  </H3>
-  <P>
-    Fight mechanics
-  </P>
-  <P>
-    <Code>sub duel(
+  <H2>Class Magician</H2>
+  <P>Base class for magicians</P>
+  <P><Code>class Magician</Code></P>
+  <H3>Sub duel</H3>
+  <P>Fight mechanics</P>
+  <P><Code>sub duel(
     Magician $a,
     Magician $b,
-)</Code>
-  </P>
-  <P>
-    Magicians only, no mortals.
-  </P>
+)</Code></P>
+  <P>Magicians only, no mortals.</P>
 </Document>
 };
 

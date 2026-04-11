@@ -15,30 +15,14 @@ my Cairo::Surface::PDF $surface .= create($save-as, $width, $height);
 my Pod::To::PDF $pod .= new(:$=pod, :$surface, :%replace);
 
 my $xml = q{<Document>
-  <H1>
-    Title from POD
-  </H1>
-  <H2>
-    Subtitle from POD
-  </H2>
-  <H2>
-    Author
-  </H2>
-  <P>
-    David Warring
-  </P>
-  <H2>
-    Version
-  </H2>
-  <P>
-    1.2.3
-  </P>
-  <H2>
-    header2
-  </H2>
-  <P>
-    a paragraph.
-  </P>
+  <H1>Title from POD</H1>
+  <H2>Subtitle from POD</H2>
+  <H2>Author</H2>
+  <P>David Warring</P>
+  <H2>Version</H2>
+  <P>1.2.3</P>
+  <H2>header2</H2>
+  <P>a paragraph.</P>
 </Document>
 };
 

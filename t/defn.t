@@ -13,29 +13,19 @@ lives-ok {$pdf.finish}
 cmp-ok $pdf.status, '==', CAIRO_STATUS_SUCCESS, 'status ok';
 
 my $xml = q{<Document>
-  <H2>
-    pod2pdf() Options
-  </H2>
+  <H2>pod2pdf() Options</H2>
   <L>
     <LI>
-      <Lbl>
-        Str() :$save-as
-      </Lbl>
+      <Lbl>Str() :$save-as</Lbl>
     </LI>
     <LBody>
-      <P>
-        A ﬁlename for the output PDF ﬁle.
-      </P>
+      <P>A ﬁlename for the output PDF ﬁle.</P>
     </LBody>
     <LI>
-      <Lbl>
-        Cairo::Surface::PDF :$surface
-      </Lbl>
+      <Lbl>Cairo::Surface::PDF :$surface</Lbl>
     </LI>
     <LBody>
-      <P>
-        A surface to render to
-      </P>
+      <P>A surface to render to</P>
     </LBody>
   </L>
 </Document>

@@ -13,149 +13,83 @@ lives-ok {$pdf.finish}
 cmp-ok $pdf.status, '==', CAIRO_STATUS_SUCCESS, 'status ok';
 
 my $xml = q{<Document>
-  <P>
-    asdf
-  </P>
+  <P>asdf</P>
   <L>
     <LI>
-      <Lbl>
-        •
-      </Lbl>
-      <LBody>
-        Abbreviated 1
-      </LBody>
+      <Lbl>•</Lbl>
+      <LBody>Abbreviated 1</LBody>
     </LI>
     <LI>
-      <Lbl>
-        •
-      </Lbl>
-      <LBody>
-        Abbreviated 2
-      </LBody>
+      <Lbl>•</Lbl>
+      <LBody>Abbreviated 2</LBody>
     </LI>
   </L>
-  <P>
-    asdf
-  </P>
+  <P>asdf</P>
   <L>
     <LI>
-      <Lbl>
-        •
-      </Lbl>
+      <Lbl>•</Lbl>
       <LBody>
-        <P>
-          Top Item
-        </P>
+        <P>Top Item</P>
         <L>
           <LI>
-            <Lbl>
-              1.
-            </Lbl>
-            <LBody>
-              First numbered sub-item
-            </LBody>
+            <Lbl>1.</Lbl>
+            <LBody>First numbered sub-item</LBody>
           </LI>
           <LI>
-            <Lbl>
-              2.
-            </Lbl>
-            <LBody>
-              Second numbered sub-item
-            </LBody>
+            <Lbl>2.</Lbl>
+            <LBody>Second numbered sub-item</LBody>
           </LI>
           <L>
             <LI>
-              <Lbl>
-                2.1.
-              </Lbl>
-              <LBody>
-                Numbered item with numbered sub-item
-              </LBody>
+              <Lbl>2.1.</Lbl>
+              <LBody>Numbered item with numbered sub-item</LBody>
             </LI>
           </L>
           <LI>
-            <Lbl>
-              ·
-            </Lbl>
-            <LBody>
-              Un-numbered sub-item
-            </LBody>
+            <Lbl>·</Lbl>
+            <LBody>Un-numbered sub-item</LBody>
           </LI>
           <L>
             <LI>
-              <Lbl>
-                1.
-              </Lbl>
-              <LBody>
-                Un-numbered item with numbered sub-item
-              </LBody>
+              <Lbl>1.</Lbl>
+              <LBody>Un-numbered item with numbered sub-item</LBody>
             </LI>
           </L>
         </L>
       </LBody>
     </LI>
     <LI>
-      <Lbl>
-        •
-      </Lbl>
-      <LBody>
-        Paragraph item
-      </LBody>
+      <Lbl>•</Lbl>
+      <LBody>Paragraph item</LBody>
     </LI>
   </L>
-  <P>
-    asdf
-  </P>
+  <P>asdf</P>
   <L>
     <LI>
-      <Lbl>
-        •
-      </Lbl>
-      <LBody>
-        Block item
-      </LBody>
+      <Lbl>•</Lbl>
+      <LBody>Block item</LBody>
     </LI>
   </L>
-  <P>
-    asdf
-  </P>
+  <P>asdf</P>
   <L>
     <LI>
-      <Lbl>
-        •
-      </Lbl>
-      <LBody>
-        Abbreviated
-      </LBody>
+      <Lbl>•</Lbl>
+      <LBody>Abbreviated</LBody>
     </LI>
     <LI>
-      <Lbl>
-        •
-      </Lbl>
-      <LBody>
-        Paragraph item
-      </LBody>
+      <Lbl>•</Lbl>
+      <LBody>Paragraph item</LBody>
     </LI>
     <LI>
-      <Lbl>
-        •
-      </Lbl>
+      <Lbl>•</Lbl>
       <LBody>
-        <P>
-          Block item
-        </P>
-        <P>
-          with multiple
-        </P>
-        <P>
-          paragraphs
-        </P>
+        <P>Block item</P>
+        <P>with multiple</P>
+        <P>paragraphs</P>
       </LBody>
     </LI>
   </L>
-  <P>
-    asdf
-  </P>
+  <P>asdf</P>
 </Document>
 };
 

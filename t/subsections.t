@@ -13,24 +13,12 @@ lives-ok {$pdf.finish}
 cmp-ok $pdf.status, '==', CAIRO_STATUS_SUCCESS, 'status ok';
 
 my $xml = q{<Document>
-  <H2>
-    Outer
-  </H2>
-  <P>
-    This is an outer paragraph
-  </P>
-  <H3>
-    Inner1
-  </H3>
-  <P>
-    This is the ﬁrst inner paragraph
-  </P>
-  <H3>
-    Inner2
-  </H3>
-  <P>
-    This is the second inner paragraph
-  </P>
+  <H2>Outer</H2>
+  <P>This is an outer paragraph</P>
+  <H3>Inner1</H3>
+  <P>This is the ﬁrst inner paragraph</P>
+  <H3>Inner2</H3>
+  <P>This is the second inner paragraph</P>
 </Document>
 };
 
