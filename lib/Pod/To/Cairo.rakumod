@@ -33,7 +33,8 @@ my class PageFootNote {
     method pad { 3 }
     method can-tag {
         # whether we can properly tag this footnote
-        Cairo::version() >= v1.18.0 && @!contents.are ~~ Str;
+        # Cairo::version() >= v1.18.0 && @!contents.are ~~ Str;
+        False;
     }
     method tag-content-ref(:%atts --> List) {
         %atts<ref> = $!id;

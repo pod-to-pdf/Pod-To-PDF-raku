@@ -18,7 +18,7 @@ my $xml = q{<Document>
       <Lbl>
         <Link>[1]</Link>
       </Lbl>
-    </Reference><Note>if you click, here, you should got back to the paragraph</Note> footnotes. <Reference>
+    </Reference> footnotes. <Reference>
       <Lbl>
         <Link>[2]</Link>
       </Lbl>
@@ -27,6 +27,7 @@ my $xml = q{<Document>
   <Lbl>
     <Link>[1]</Link>
   </Lbl>
+  <Note>if you click, here, you should got back to the paragraph</Note>
   <Lbl>
     <Link>[2]</Link>
   </Lbl>
